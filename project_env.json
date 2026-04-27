@@ -1,0 +1,32 @@
+{
+  "config_path": "public/assets/game_config.json",
+  "public_root": "public",
+  "prompt_injection": {
+    "game agent": [
+      {
+        "decorator": "file_block",
+        "path": "docs/designer.md",
+        "label": "designer-guide",
+        "target": "system_prompt",
+        "watch": false
+      }
+    ],
+    "game developer agent": [
+      {
+        "decorator": "file_block",
+        "path": "docs/developer.md",
+        "label": "developer-guide",
+        "target": "system_prompt",
+        "watch": true
+      },
+      {
+        "decorator": "file_block",
+        "path": "docs/file-structure.md",
+        "label": "file-structure",
+        "target": "user_message",
+        "watch": true
+      }
+    ]
+  },
+  "mod_config_presets": []
+}
