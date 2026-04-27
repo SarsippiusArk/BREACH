@@ -266,13 +266,20 @@ export class GameScene {
   }
 
   draw(ctx) {
+    // Guard: if enter() hasn't completed, bail out gracefully
+    if (!this.#camera || !this.#loader || !this.#entities || !this.#particles) return;
+
     // Background
     drawBackground(ctx, this.#camera.scrollX, this.#loader.theme);
 
     // Entities — all positions are screen-space, draw directly
     for (const type of ['powerup','enemy','boss','playerBullet','player','enemyBullet']) {
       for (const e of this.#entities.getGroup(type)) {
-        e.draw?.(ctx);
+        try {
+          e.draw?.(ctx);
+        } catch (err) {
+          console.error(`[BREACH] draw error (${type}):`, err);
+        }
       }
     }
     this.#particles.draw(ctx);

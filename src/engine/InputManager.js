@@ -19,22 +19,22 @@ export class InputManager {
 
   // Keyboard bindings per player
   #KB = [
-    { // P1 — WASD controls; P2's arrow keys also navigate menus via player-1-or-2 checks
-      up:      ['KeyW'],
-      down:    ['KeyS'],
-      left:    ['KeyA'],
-      right:   ['KeyD'],
+    { // P1 — Arrow keys + WASD; P2 must use Numpad to avoid collisions
+      up:      ['KeyW', 'ArrowUp'],
+      down:    ['KeyS', 'ArrowDown'],
+      left:    ['KeyA', 'ArrowLeft'],
+      right:   ['KeyD', 'ArrowRight'],
       fire:    ['Space', 'KeyZ'],
       special: ['ShiftLeft', 'KeyX'],
       pause:   ['Escape'],
       confirm: ['Space', 'Enter', 'KeyZ'],
       cancel:  ['Escape', 'Backspace'],
     },
-    { // P2 — separate keys so both can play on the same keyboard
-      up:      ['ArrowUp'],
-      down:    ['ArrowDown'],
-      left:    ['ArrowLeft'],
-      right:   ['ArrowRight'],
+    { // P2 — Numpad (arrows shared with P1 above, so P2 needs dedicated keys)
+      up:      ['Numpad8'],
+      down:    ['Numpad5', 'Numpad2'],
+      left:    ['Numpad4'],
+      right:   ['Numpad6'],
       fire:    ['Numpad0', 'ControlRight'],
       special: ['ShiftRight'],
       pause:   ['Escape'],

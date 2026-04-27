@@ -126,7 +126,7 @@ export class CharacterSelectScene {
 
     // Controls hint
     divider(ctx, GAME_H - 18);
-    px(ctx, 'LEFT/RIGHT: SELECT    FIRE: READY    ESC: BACK', GAME_W/2, GAME_H - 14, COL.GRAY, 4, 'center');
+    px(ctx, 'ARROWS/AD: SELECT    SPACE/ENTER: READY    ESC: BACK', GAME_W/2, GAME_H - 14, COL.GRAY, 4, 'center');
   }
 
   #drawSection(ctx, pi, cx, pilots) {
