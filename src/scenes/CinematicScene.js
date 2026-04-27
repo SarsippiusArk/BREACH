@@ -106,7 +106,7 @@ export class CinematicScene {
     // Fade in/out
     const fadeIn  = Math.min(1, this.#t / FADE_TIME);
     const fadeOut = this.#t > PANEL_DURATION - FADE_TIME
-      ? 1 - (PANEL_DURATION - this.#t) / FADE_TIME : 1;
+      ? (PANEL_DURATION - this.#t) / FADE_TIME : 1;
     const alpha = Math.min(fadeIn, fadeOut);
     ctx.globalAlpha = alpha;
 

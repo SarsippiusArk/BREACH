@@ -14,7 +14,7 @@ git add -A
 
 # Check if there are changes to commit
 if git status --porcelain | grep -q .; then
-    git commit -m 'BREACH v1: shmup, Level 1, 3 pilots, menus, audio'
+    git commit -m 'Fix input detection and cinematic fade'
 fi
 
 # Get commit hash

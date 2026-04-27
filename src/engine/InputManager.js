@@ -2,29 +2,35 @@ import { detectController, CTRL, GP_IDX } from './ControllerProfiles.js';
 
 /**
  * InputManager: unified keyboard + gamepad input for 2 players.
- * All key/button queries go through isDown() / isPressed().
+ *
+ * KEY FIX: Uses two snapshots for isPressed detection:
+ *   - #curSnap  = keys held at the START of the current frame's update()
+ *   - #prevSnap = keys held at the START of the PREVIOUS frame's update()
+ * This correctly detects the transition from "not held" → "held".
  */
 export class InputManager {
-  #keys     = new Set();
-  #prevKeys = new Set();
-  #gps      = [null, null];
-  #prevGpBtns = [[], []];
-  #ctrlTypes  = [CTRL.KEYBOARD, CTRL.KEYBOARD];
+  #keys     = new Set();   // Live: updated immediately by keydown/keyup events
+  #prevSnap = new Set();   // Snapshot from previous frame's update()
+  #curSnap  = new Set();   // Snapshot from current frame's update()
 
-  // Keyboard bindings per player: action -> key codes
+  #gps         = [null, null];
+  #prevGpBtns  = [[], []];
+  #ctrlTypes   = [CTRL.KEYBOARD, CTRL.KEYBOARD];
+
+  // Keyboard bindings per player
   #KB = [
-    { // P1
+    { // P1 — WASD controls; P2's arrow keys also navigate menus via player-1-or-2 checks
       up:      ['KeyW'],
       down:    ['KeyS'],
       left:    ['KeyA'],
       right:   ['KeyD'],
-      fire:    ['Space'],
-      special: ['ShiftLeft'],
+      fire:    ['Space', 'KeyZ'],
+      special: ['ShiftLeft', 'KeyX'],
       pause:   ['Escape'],
-      confirm: ['Space', 'Enter'],
+      confirm: ['Space', 'Enter', 'KeyZ'],
       cancel:  ['Escape', 'Backspace'],
     },
-    { // P2
+    { // P2 — separate keys so both can play on the same keyboard
       up:      ['ArrowUp'],
       down:    ['ArrowDown'],
       left:    ['ArrowLeft'],
@@ -38,8 +44,14 @@ export class InputManager {
   ];
 
   constructor() {
-    window.addEventListener('keydown', e => { this.#keys.add(e.code); e.preventDefault && e.code === 'Space' && e.preventDefault(); });
-    window.addEventListener('keyup',   e => this.#keys.delete(e.code));
+    window.addEventListener('keydown', e => {
+      this.#keys.add(e.code);
+      // Prevent space from scrolling the page
+      if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+        e.preventDefault();
+      }
+    });
+    window.addEventListener('keyup', e => this.#keys.delete(e.code));
     window.addEventListener('gamepadconnected',    e => this.#onConnect(e));
     window.addEventListener('gamepaddisconnected', e => this.#onDisconnect(e));
   }
@@ -55,23 +67,36 @@ export class InputManager {
   }
 
   update() {
-    this.#prevKeys = new Set(this.#keys);
+    // Advance snapshots: previous = last frame's current; current = live state right now
+    this.#prevSnap = this.#curSnap;
+    this.#curSnap  = new Set(this.#keys);
+
+    // Poll gamepads
     const gpList = navigator.getGamepads?.() ?? [];
     for (let i = 0; i < 2; i++) {
       const gp = gpList[i];
       if (!gp) continue;
       this.#prevGpBtns[i] = this.#gps[i]?.buttons.map(b => b.pressed) ?? [];
-      this.#gps[i]       = gp;
+      this.#gps[i]        = gp;
       if (this.#ctrlTypes[i] === CTRL.KEYBOARD) this.#ctrlTypes[i] = detectController(gp.id);
     }
   }
 
+  // ── Keyboard helpers ─────────────────────────────────────────────────────
+
   #kbDown(player, action) {
+    // isDown uses live key state
     return (this.#KB[player]?.[action] ?? []).some(k => this.#keys.has(k));
   }
+
   #kbPressed(player, action) {
-    return (this.#KB[player]?.[action] ?? []).some(k => this.#keys.has(k) && !this.#prevKeys.has(k));
+    // isPressed: key in current snapshot but NOT in previous snapshot
+    return (this.#KB[player]?.[action] ?? []).some(k =>
+      this.#curSnap.has(k) && !this.#prevSnap.has(k)
+    );
   }
+
+  // ── Gamepad helpers ──────────────────────────────────────────────────────
 
   #gpDown(player, action) {
     const gp = this.#gps[player]; if (!gp) return false;
@@ -82,6 +107,7 @@ export class InputManager {
     const idx = GP_IDX[action]; if (idx == null) return false;
     return gp.buttons[idx]?.pressed ?? false;
   }
+
   #gpPressed(player, action) {
     const gp = this.#gps[player]; if (!gp) return false;
     const idx = GP_IDX[action]; if (idx == null) return false;
@@ -90,12 +116,16 @@ export class InputManager {
     return now && !prev;
   }
 
+  // ── Public API ────────────────────────────────────────────────────────────
+
   isDown(player, action)    { return this.#kbDown(player, action)    || this.#gpDown(player, action); }
   isPressed(player, action) { return this.#kbPressed(player, action) || this.#gpPressed(player, action); }
 
-  /** Any key/button just pressed (used for "press any key" prompts) */
+  /** True if any key/button was just pressed this frame (for "press any key" prompts) */
   anyPressed() {
-    if (this.#keys.size > this.#prevKeys.size) return true;
+    for (const k of this.#curSnap) {
+      if (!this.#prevSnap.has(k)) return true;
+    }
     for (let i = 0; i < 2; i++) {
       const gp = this.#gps[i]; if (!gp) continue;
       for (let b = 0; b < gp.buttons.length; b++) {
@@ -106,6 +136,5 @@ export class InputManager {
   }
 
   getControllerType(player) { return this.#ctrlTypes[player]; }
-
-  hasGamepad(player) { return this.#gps[player] != null; }
+  hasGamepad(player)        { return this.#gps[player] != null; }
 }

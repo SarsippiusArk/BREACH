@@ -86,3 +86,8 @@ src/
 | Charge Shot | Space (hold+release) | Numpad0 (hold+release) |
 | Special | Left Shift | Right Shift |
 | Pause | Escape | — |
+
+## Build and Deploy
+1. Run `bash build.sh` or `npm run build` to generate the production build in the `dist/` directory.
+2. The `dist/` folder contains everything needed to serve the game: `index.html`, CSS, JS chunks, and static assets from the `public/` directory.
+3. Deploy the contents of the `dist/` folder to any static hosting provider (e.g., GitHub Pages, Vercel, Netlify).

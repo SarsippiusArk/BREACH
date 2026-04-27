@@ -1,12 +1,12 @@
 {
   "config_path": "public/assets/game_config.json",
-  "public_root": "public",
+  "mod_config_presets": [],
   "prompt_injection": {
     "game agent": [
       {
         "decorator": "file_block",
-        "path": "docs/designer.md",
         "label": "designer-guide",
+        "path": "docs/designer.md",
         "target": "system_prompt",
         "watch": false
       }
@@ -14,19 +14,26 @@
     "game developer agent": [
       {
         "decorator": "file_block",
-        "path": "docs/developer.md",
         "label": "developer-guide",
+        "path": "docs/developer.md",
         "target": "system_prompt",
         "watch": true
       },
       {
         "decorator": "file_block",
-        "path": "docs/file-structure.md",
         "label": "file-structure",
+        "path": "docs/file-structure.md",
         "target": "user_message",
         "watch": true
       }
     ]
   },
-  "mod_config_presets": []
+  "public_root": "public",
+  "subagents": {
+    "game_cover": {
+      "agent_id": "gamev2.game_cover_agent:d7a456d6-79d6-4d3c-b914-22fb65dd7afd",
+      "agent_type": "game_cover_agent",
+      "created_at": 1777281567968561176
+    }
+  }
 }

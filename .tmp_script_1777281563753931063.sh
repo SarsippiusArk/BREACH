@@ -1,1 +1,0 @@
-sandbox-playwright-smoke --root '/home/combos/workspace/dist' --out-dir '/tmp/build_and_deploy_smoke/2b5b9140-a517-4cf4-8753-9ffff81bf5fa' --wait-ms 10000 --timeout-ms 45000 --preview-url '/deploy/gamepreview/aa6bbbe9ae6c92fd5bc085b74c31d4ef/'
