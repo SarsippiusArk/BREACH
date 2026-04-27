@@ -28,12 +28,12 @@ const DEFAULT_UNLOCKS = {
 };
 
 const DEFAULT_PALETTE = {
-  amy:     ['#5599FF', '#99BBFF', '#CCEEFC', '#FF6622'],
-  rohan:   ['#44CC77', '#88DDAA', '#AADDBB', '#FFAA22'],
-  akane:   ['#FF5566', '#FF8899', '#FFAAAA', '#FF8822'],
-  secret1: ['#AAAACC', '#CCCCEE', '#EEEEFF', '#FFCC44'],
-  secret2: ['#FF9900', '#FFCC44', '#FFE8AA', '#FF4400'],
-  alien:   ['#44EEBB', '#88FFD4', '#BBFFEE', '#AA44FF'],
+  amy:     ['#0049DB', '#00B6FF', '#00DBFF', '#FF9200'],
+  rohan:   ['#009200', '#49DB00', '#00DBDB', '#FF9200'],
+  akane:   ['#B60000', '#DB4900', '#FFB600', '#FF9200'],
+  secret1: ['#6D6D92', '#B6B6DB', '#DBDBFF', '#FFDB00'],
+  secret2: ['#924900', '#FFDB00', '#FFFF00', '#FF6D00'],
+  alien:   ['#006D49', '#49DB92', '#00FFDB', '#B600FF'],
 };
 
 function load(key, def) {

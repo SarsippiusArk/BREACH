@@ -21,7 +21,7 @@ export const PILOT_DATA = {
   amy: {
     name: 'AMY',
     fullName: 'Amy Chen',
-    color: '#5599FF',
+    color: '#00B6FF',
     speed: 120,
     fireRate: 0.10,
     specialAmmo: 8,
@@ -32,7 +32,7 @@ export const PILOT_DATA = {
   rohan: {
     name: 'ROHAN',
     fullName: 'Rohan Mehta',
-    color: '#44CC77',
+    color: '#49DB00',
     speed: 110,
     fireRate: 0.16,
     specialAmmo: 12,
@@ -43,7 +43,7 @@ export const PILOT_DATA = {
   akane: {
     name: 'AKANE',
     fullName: 'Akane Miyamoto',
-    color: '#FF5566',
+    color: '#DB4900',
     speed: 148,
     fireRate: 0.14,
     specialAmmo: 8,
@@ -94,15 +94,15 @@ export const BASE_SCROLL_SPEED = 55; // logical px/sec
 // Power-up types
 export const POWERUP_TYPES = ['speed', 'rapid', 'charge', 'shield', 'special', 'life'];
 
-// Colors
+// Colors — TurboGrafx-16 jewel-tone palette (3-bit per channel)
 export const COL = {
-  BG:      '#010818',
-  PANEL:   '#0A1530',
-  BORDER:  '#1144AA',
-  ACCENT:  '#2266FF',
-  WHITE:   '#EEEEFF',
-  YELLOW:  '#FFDD44',
-  RED:     '#FF3344',
-  GREEN:   '#44FF88',
-  GRAY:    '#556688',
+  BG:      '#000012',
+  PANEL:   '#000049',
+  BORDER:  '#0049DB',
+  ACCENT:  '#0092DB',
+  WHITE:   '#DBDBFF',
+  YELLOW:  '#FFDB00',
+  RED:     '#FF0000',
+  GREEN:   '#49DB00',
+  GRAY:    '#496D6D',
 };
