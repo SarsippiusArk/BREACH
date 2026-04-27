@@ -1,7 +1,7 @@
 {
-  "name": "canvas-rotating-square",
+  "name": "breach-shmup",
   "version": "1.0.0",
-  "description": "Minimal 2D Canvas demo inspired by the Empty3D scaffold",
+  "description": "BREACH — A 2-player horizontal shoot-em-up",
   "type": "module",
   "scripts": {
     "dev": "vite",
