@@ -67,6 +67,9 @@ export class MainMenuScene {
     this.#t += delta;
     if (this.#inputCooldown > 0) { this.#inputCooldown -= delta; return; }
 
+    // Resume AudioContext on first user interaction (browser policy requires a gesture)
+    if (input.anyPressed()) this.#audio.resume();
+
     // Nav up/down
     if (input.isPressed(0, 'up') || input.isPressed(1, 'up')) {
       this.#sel = (this.#sel - 1 + this.#items.length) % this.#items.length;
@@ -97,7 +100,6 @@ export class MainMenuScene {
       this.#audio.playSound('menuSel');
       const choice = this.#items[this.#sel];
       if (choice === 'NEW GAME') {
-        this.#audio.resume();
         this.#state.go(SCENES.CINEMATIC, { newGame: true });
       } else if (choice === 'CONTINUE') {
         if (SaveManager.hasSave()) {

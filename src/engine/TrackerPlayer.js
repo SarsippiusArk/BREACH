@@ -28,8 +28,10 @@ export class TrackerPlayer {
 
   async #init(ctx, destGain) {
     try {
-      // Dynamic import — bypasses Vite bundling; file served from public/
-      const { ChiptuneJsPlayer } = await import('/lib/chiptune3/chiptune3.js');
+      // Dynamic import — bypasses Vite bundling; file served from public/.
+      // Use a page-relative URL so the path works regardless of deploy subdirectory.
+      const chiptuneUrl = new URL('lib/chiptune3/chiptune3.js', document.baseURI).href;
+      const { ChiptuneJsPlayer } = await import(/* @vite-ignore */ chiptuneUrl);
 
       await new Promise((resolve, reject) => {
         const player = new ChiptuneJsPlayer({

@@ -23,6 +23,7 @@ export class AudioManager {
   #scheduler = null;   // synth fallback scheduler (cleared once tracker loads)
   #currentTrack = null;
   #tracker = null;     // TrackerPlayer instance
+  #resumed = false;    // true once AudioContext has been kicked off
 
   #getCtx() {
     if (!this.#ctx) {
@@ -43,16 +44,16 @@ export class AudioManager {
   resume() {
     const c = this.#getCtx();
     if (c.state === 'suspended') c.resume();
-    // Kick off tracker init (async, non-blocking)
+    // Create TrackerPlayer once (non-blocking async init)
     if (!this.#tracker) {
       this.#tracker = new TrackerPlayer(c, this.#musicGain);
+      // If a track was queued before first user interaction, start it now
+      if (this.#currentTrack) {
+        const xmFile = TRACK_MAP[this.#currentTrack];
+        if (xmFile) this.#tracker.play(`./music/${xmFile}`);
+      }
     }
-    // If a track was requested before any user interaction (e.g. menu music),
-    // kick it off now that the context is running.
-    if (this.#currentTrack) {
-      const xmFile = TRACK_MAP[this.#currentTrack];
-      if (xmFile) this.#tracker.play(`./music/${xmFile}`);
-    }
+    this.#resumed = true;
   }
 
   setMusicVolume(v) {

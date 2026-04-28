@@ -14,7 +14,7 @@ git add -A
 
 # Check if there are changes to commit
 if git status --porcelain | grep -q .; then
-    git commit -m 'Add key remapping screen to Options menu'
+    git commit -m 'Fix tracker music path + key remapping menu'
 fi
 
 # Get commit hash
