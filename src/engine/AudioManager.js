@@ -47,6 +47,12 @@ export class AudioManager {
     if (!this.#tracker) {
       this.#tracker = new TrackerPlayer(c, this.#musicGain);
     }
+    // If a track was requested before any user interaction (e.g. menu music),
+    // kick it off now that the context is running.
+    if (this.#currentTrack) {
+      const xmFile = TRACK_MAP[this.#currentTrack];
+      if (xmFile) this.#tracker.play(`./music/${xmFile}`);
+    }
   }
 
   setMusicVolume(v) {
@@ -162,14 +168,12 @@ export class AudioManager {
   startMusic(trackId) {
     this.stopMusic();
     this.#getCtx();
-    if (this.#ctx.state === 'suspended') return;
-    this.#currentTrack = trackId;
+    this.#currentTrack = trackId;           // always save, even if suspended
+    if (this.#ctx.state === 'suspended') return; // resume() will start it
     const xmFile = TRACK_MAP[trackId];
     if (xmFile && this.#tracker) {
-      // Tracker ready — play the XM file (loops automatically)
       this.#tracker.play(`./music/${xmFile}`);
     } else if (xmFile && !this.#tracker) {
-      // Tracker not initialised yet (no user interaction) — init then play
       this.#tracker = new TrackerPlayer(this.#getCtx(), this.#musicGain);
       this.#tracker.ready.then(() => {
         if (this.#currentTrack === trackId) {
