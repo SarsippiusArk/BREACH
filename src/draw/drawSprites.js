@@ -4,34 +4,66 @@ import { loadAtlas, atlasFrame } from '../engine/AtlasLoader.js';
 export const SHIP_W = 24;
 export const SHIP_H = 12;
 
-// ── Amy sprite atlas (blue_teal_viper stopgap) ───────────────────────────────
-const VIPER_FW = 701, VIPER_FH = 361; // pixels per frame in the atlas
-const VIPER_ROWS = { fly_straight: 0, fly_up: 1, fly_down: 2 };
-let _viperSheet = null;
-(function () {
-  const img = new Image();
-  img.onload = () => { _viperSheet = img; };
-  img.src = './assets/blue_teal_viper.webp';
+// ── Amy sprite sheet (Gradius III, Konami 1991 — credit to Konami) ───────────
+// Sheet: 206×265, RGB, bg color (215,215,206), frames in row 1 at y=14–29
+const AMY_BG   = [215, 215, 206];
+const AMY_BG_TOL = 22;
+const AMY_FRAMES_SRC = [
+  { sx: 19, sy: 14, sw: 31, sh: 16 },
+  { sx: 54, sy: 14, sw: 31, sh: 16 },
+  { sx: 89, sy: 14, sw: 31, sh: 16 },
+  { sx:124, sy: 14, sw: 31, sh: 16 },
+  { sx:159, sy: 14, sw: 31, sh: 16 },
+];
+const _amyFrameCache = []; // pre-keyed + scaled display canvases
+
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = () => res(null);
+    i.src = './assets/amy_gradius_sheet.png';
+  });
+  if (!img) return;
+  const DW = 56, DH = 29;
+  for (const f of AMY_FRAMES_SRC) {
+    // Extract raw frame
+    const tmp = Object.assign(document.createElement('canvas'), { width: f.sw, height: f.sh });
+    const tc = tmp.getContext('2d');
+    tc.drawImage(img, f.sx, f.sy, f.sw, f.sh, 0, 0, f.sw, f.sh);
+    // Key out background → alpha=0
+    const id = tc.getImageData(0, 0, f.sw, f.sh);
+    const d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      if (Math.abs(d[i]   - AMY_BG[0])
+        + Math.abs(d[i+1] - AMY_BG[1])
+        + Math.abs(d[i+2] - AMY_BG[2]) <= AMY_BG_TOL) d[i+3] = 0;
+    }
+    tc.putImageData(id, 0, 0);
+    // Scale to display size (nearest-neighbour — keep pixel art crisp)
+    const oc = Object.assign(document.createElement('canvas'), { width: DW, height: DH });
+    const c2d = oc.getContext('2d');
+    c2d.imageSmoothingEnabled = false;
+    c2d.drawImage(tmp, 0, 0, f.sw, f.sh, 0, 0, DW, DH);
+    _amyFrameCache.push(oc);
+  }
 }());
 
 // ── TurboGrafx-16 jewel-tone palette — 3-bit per channel (0x00/24/49/6D/92/B6/DB/FF)
 // Player Ships ─────────────────────────────────────────────────────────────────
 
-/** Amy: blue/teal Colonial Viper — sprite atlas with procedural fallback */
+/** Amy: Gradius III ship sprite (Konami 1991) — bg-keyed, pixel art 2× scaled */
 export function drawAmyShip(ctx, x, y, pal, invincible) {
   if (invincible && Math.floor(Date.now() / 80) % 2) return;
   x = Math.round(x); y = Math.round(y);
 
-  // ── Sprite atlas path ──────────────────────────────────────────────────────
-  if (_viperSheet) {
-    const frameIdx = Math.floor(Date.now() / 110) % 8;
-    const sx = frameIdx * VIPER_FW;
-    const sy = VIPER_ROWS.fly_straight * VIPER_FH;
-    // Draw at 2.3× the hitbox size, centred over the hitbox
+  // ── Sprite sheet (5 animation frames, pre-keyed) ───────────────────────────
+  if (_amyFrameCache.length > 0) {
+    const fi = Math.floor(Date.now() / 150) % _amyFrameCache.length;
     const DW = 56, DH = 29;
     const dx = x + Math.round(SHIP_W / 2 - DW / 2);
     const dy = y + Math.round(SHIP_H / 2 - DH / 2);
-    ctx.drawImage(_viperSheet, sx, sy, VIPER_FW, VIPER_FH, dx, dy, DW, DH);
+    ctx.drawImage(_amyFrameCache[fi], 0, 0, DW, DH, dx, dy, DW, DH);
     return;
   }
 
