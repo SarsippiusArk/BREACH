@@ -4,6 +4,36 @@ import { drawMenuStarfield, drawBREACHLogo, menuItem, px, panel, divider } from 
 import { drawButtonIcon } from '../draw/drawControllerIcons.js';
 import { CTRL } from '../engine/ControllerProfiles.js';
 
+// ── Logo image loader (white-removal via offscreen canvas) ────────────────────
+let _logoCanvas = null;
+(function loadLogo() {
+  const img = new Image();
+  img.onload = () => {
+    // Crop away the large white margins around the text
+    const CX = 70, CY = 78;
+    const CW = img.naturalWidth  - CX * 2;
+    const CH = img.naturalHeight - CY * 2;
+    const oc = document.createElement('canvas');
+    oc.width = CW; oc.height = CH;
+    const octx = oc.getContext('2d');
+    octx.drawImage(img, CX, CY, CW, CH, 0, 0, CW, CH);
+    // Make near-white pixels transparent (preserve chrome highlights)
+    const id = octx.getImageData(0, 0, CW, CH);
+    const d  = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const mn = Math.min(d[i], d[i+1], d[i+2]);
+      if (mn > 252) {
+        d[i+3] = 0;
+      } else if (mn > 230) {
+        d[i+3] = Math.round(255 * (1 - (mn - 230) / 22));
+      }
+    }
+    octx.putImageData(id, 0, 0);
+    _logoCanvas = oc;
+  };
+  img.src = './assets/breach_title_logo.webp';
+}());
+
 const ITEMS_BASE  = ['NEW GAME', 'CONTINUE', 'OPTIONS', 'EXTRAS'];
 const ITEMS_UNLOCK = ['NEW GAME', 'CONTINUE', 'OPTIONS', 'EXTRAS', 'NEW GAME +'];
 
@@ -88,16 +118,24 @@ export class MainMenuScene {
   draw(ctx) {
     drawMenuStarfield(ctx, this.#t);
 
-    // Logo
-    ctx.save();
-    ctx.translate(GAME_W / 2, GAME_H * 0.18);
-    drawBREACHLogo(ctx, 0, 0);
-    ctx.restore();
+    // Logo — image version with white stripped, fallback to drawn text
+    if (_logoCanvas) {
+      const LW = 260;
+      const LH = Math.round(_logoCanvas.height * (LW / _logoCanvas.width));
+      const LX = Math.round(GAME_W / 2 - LW / 2);
+      const LY = 4;
+      ctx.drawImage(_logoCanvas, LX, LY, LW, LH);
+    } else {
+      ctx.save();
+      ctx.translate(GAME_W / 2, GAME_H * 0.18);
+      drawBREACHLogo(ctx, 0, 0);
+      ctx.restore();
+    }
 
-    divider(ctx, GAME_H * 0.38);
+    divider(ctx, GAME_H * 0.50);
 
     // Menu items
-    const startY = GAME_H * 0.44;
+    const startY = GAME_H * 0.55;
     const hasSave = SaveManager.hasSave();
     this.#items.forEach((item, i) => {
       const y = startY + i * 22;
