@@ -4,24 +4,23 @@
  * Loads chiptune3.js dynamically at runtime from public/lib/chiptune3/
  * so Vite doesn't try to bundle the worklet files.
  *
- * Usage:
- *   const tp = new TrackerPlayer(audioCtx, musicGainNode);
- *   await tp.ready;               // wait for worklet init
- *   tp.play('./music/foo.xm');
- *   tp.stop();
- *   tp.setVolume(0.8);            // 0..1
+ * Critical: ChiptuneJsPlayer's processNode is created asynchronously inside
+ * audioWorklet.addModule().then(). Any load/play call before that .then()
+ * fires silently does nothing (postMsg guards on processNode existence).
+ * We therefore wait for the 'onInitialized' event before accepting play().
  */
 export class TrackerPlayer {
+  /** @type {import('/lib/chiptune3/chiptune3.js').ChiptuneJsPlayer|null} */
   #player = null;
   #volume = 1;
   #pendingUrl = null;
 
-  /** Promise that resolves when the worklet is ready to play. */
+  /** Promise that resolves once the worklet is fully ready. */
   ready;
 
   /**
-   * @param {AudioContext} ctx       Shared AudioContext from AudioManager
-   * @param {GainNode}     destGain  AudioManager's musicGain node
+   * @param {AudioContext} ctx      Shared AudioContext from AudioManager
+   * @param {GainNode}     destGain AudioManager's musicGain node
    */
   constructor(ctx, destGain) {
     this.ready = this.#init(ctx, destGain);
@@ -32,18 +31,29 @@ export class TrackerPlayer {
       // Dynamic import — bypasses Vite bundling; file served from public/
       const { ChiptuneJsPlayer } = await import('/lib/chiptune3/chiptune3.js');
 
-      this.#player = new ChiptuneJsPlayer({
-        context: ctx,       // share existing AudioContext
-        repeatCount: -1,    // loop forever
-        stereoSeparation: 80,
+      await new Promise((resolve, reject) => {
+        const player = new ChiptuneJsPlayer({
+          context: ctx,      // share existing AudioContext
+          repeatCount: -1,   // loop forever
+          stereoSeparation: 80,
+        });
+
+        // Route tracker output through AudioManager's music gain.
+        // gain node exists immediately; processNode connects to it in .then().
+        player.gain.connect(destGain);
+        player.gain.gain.value = this.#volume;
+
+        // onInitialized fires AFTER audioWorklet.addModule().then() completes,
+        // i.e. after processNode exists and is wired. Only NOW is play() safe.
+        player.onInitialized(() => {
+          this.#player = player;
+          resolve();
+        });
+
+        player.onError((e) => reject(e));
       });
 
-      // Route tracker output through AudioManager's music gain
-      // (chiptune3 does NOT auto-connect when context is provided)
-      this.#player.gain.connect(destGain);
-      this.#player.gain.gain.value = this.#volume;
-
-      // If play() was called before we were ready, start now
+      // Play any track that was requested while we were initialising
       if (this.#pendingUrl) {
         this.#player.load(this.#pendingUrl);
         this.#pendingUrl = null;
@@ -53,12 +63,12 @@ export class TrackerPlayer {
     }
   }
 
-  /** Load and immediately play an XM/MOD file by URL. */
+  /** Load and play an XM/MOD file by URL. Safe to call before ready. */
   play(url) {
     if (this.#player) {
       this.#player.load(url);
     } else {
-      this.#pendingUrl = url; // play once ready
+      this.#pendingUrl = url;  // replayed once onInitialized fires
     }
   }
 
