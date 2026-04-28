@@ -18,6 +18,7 @@ import { OptionsScene }       from './scenes/OptionsScene.js';
 import { ExtrasScene }        from './scenes/ExtrasScene.js';
 import { LevelEditorScene }   from './scenes/LevelEditorScene.js';
 import { SaveEditorScene }    from './scenes/SaveEditorScene.js';
+import { KeyBindingScene }   from './scenes/KeyBindingScene.js';
 
 // ── Canvas setup ──────────────────────────────────────────────────────────────
 const { canvas, ctx } = createCanvasContext('#stage');
@@ -40,7 +41,8 @@ state.register(SCENES.GAME_OVER,    new GameOverScene(state, audio));
 state.register(SCENES.OPTIONS,      new OptionsScene(state, audio));
 state.register(SCENES.EXTRAS,       new ExtrasScene(state, audio));
 state.register(SCENES.LEVEL_EDITOR, new LevelEditorScene(state));
-state.register(SCENES.SAVE_EDITOR,  new SaveEditorScene(state));
+state.register(SCENES.SAVE_EDITOR,   new SaveEditorScene(state));
+state.register(SCENES.KEY_BINDINGS,  new KeyBindingScene(state, input));
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 state.go(SCENES.MENU);

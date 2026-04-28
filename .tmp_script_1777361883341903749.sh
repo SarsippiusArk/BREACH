@@ -14,7 +14,7 @@ git add -A
 
 # Check if there are changes to commit
 if git status --porcelain | grep -q .; then
-    git commit -m 'Amy ship: blue_teal_viper sprite atlas stopgap'
+    git commit -m 'Add key remapping screen to Options menu'
 fi
 
 # Get commit hash

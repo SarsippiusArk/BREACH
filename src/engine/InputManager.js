@@ -1,4 +1,37 @@
 import { detectController, CTRL, GP_IDX } from './ControllerProfiles.js';
+import { SaveManager } from './SaveManager.js';
+
+// Actions the player can remap (pause/confirm/cancel are excluded to prevent lock-out)
+export const REMAPPABLE_ACTIONS = ['up','down','left','right','fire','special'];
+
+const DEFAULT_KB = [
+  { // P1
+    up:      ['KeyW', 'ArrowUp'],
+    down:    ['KeyS', 'ArrowDown'],
+    left:    ['KeyA', 'ArrowLeft'],
+    right:   ['KeyD', 'ArrowRight'],
+    fire:    ['Space', 'KeyZ'],
+    special: ['ShiftLeft', 'KeyX'],
+    pause:   ['Escape'],
+    confirm: ['Space', 'Enter', 'KeyZ'],
+    cancel:  ['Escape', 'Backspace'],
+  },
+  { // P2
+    up:      ['Numpad8'],
+    down:    ['Numpad5', 'Numpad2'],
+    left:    ['Numpad4'],
+    right:   ['Numpad6'],
+    fire:    ['Numpad0', 'ControlRight'],
+    special: ['ShiftRight'],
+    pause:   ['Escape'],
+    confirm: ['Numpad0', 'NumpadEnter'],
+    cancel:  ['Backspace'],
+  },
+];
+
+export function getDefaultBindings() {
+  return structuredClone(DEFAULT_KB);
+}
 
 /**
  * InputManager: unified keyboard + gamepad input for 2 players.
@@ -17,33 +50,13 @@ export class InputManager {
   #prevGpBtns  = [[], []];
   #ctrlTypes   = [CTRL.KEYBOARD, CTRL.KEYBOARD];
 
-  // Keyboard bindings per player
-  #KB = [
-    { // P1 — Arrow keys + WASD; P2 must use Numpad to avoid collisions
-      up:      ['KeyW', 'ArrowUp'],
-      down:    ['KeyS', 'ArrowDown'],
-      left:    ['KeyA', 'ArrowLeft'],
-      right:   ['KeyD', 'ArrowRight'],
-      fire:    ['Space', 'KeyZ'],
-      special: ['ShiftLeft', 'KeyX'],
-      pause:   ['Escape'],
-      confirm: ['Space', 'Enter', 'KeyZ'],
-      cancel:  ['Escape', 'Backspace'],
-    },
-    { // P2 — Numpad (arrows shared with P1 above, so P2 needs dedicated keys)
-      up:      ['Numpad8'],
-      down:    ['Numpad5', 'Numpad2'],
-      left:    ['Numpad4'],
-      right:   ['Numpad6'],
-      fire:    ['Numpad0', 'ControlRight'],
-      special: ['ShiftRight'],
-      pause:   ['Escape'],
-      confirm: ['Numpad0', 'NumpadEnter'],
-      cancel:  ['Backspace'],
-    },
-  ];
+  // Keyboard bindings per player (deep-cloned so mutations don't touch DEFAULT_KB)
+  #KB = structuredClone(DEFAULT_KB);
 
   constructor() {
+    // Apply any saved custom bindings on startup
+    const saved = SaveManager.getBindings();
+    if (saved) this.loadBindings(saved);
     window.addEventListener('keydown', e => {
       this.#keys.add(e.code);
       // Prevent space from scrolling the page
@@ -79,6 +92,33 @@ export class InputManager {
       this.#prevGpBtns[i] = this.#gps[i]?.buttons.map(b => b.pressed) ?? [];
       this.#gps[i]        = gp;
       if (this.#ctrlTypes[i] === CTRL.KEYBOARD) this.#ctrlTypes[i] = detectController(gp.id);
+    }
+  }
+
+  /** Load saved bindings (only remappable actions; fixed ones stay at defaults). */
+  loadBindings(saved) {
+    for (let p = 0; p < 2; p++) {
+      if (!saved[p]) continue;
+      for (const action of REMAPPABLE_ACTIONS) {
+        if (saved[p][action]) this.#KB[p][action] = saved[p][action];
+      }
+    }
+  }
+
+  /** Deep copy of current bindings (all actions). */
+  getBindings() { return structuredClone(this.#KB); }
+
+  /** Set a single action binding for one player. Returns the new codes array. */
+  setBinding(player, action, keyCode) {
+    if (!REMAPPABLE_ACTIONS.includes(action)) return;
+    this.#KB[player][action] = [keyCode];
+    return [keyCode];
+  }
+
+  /** Reset remappable actions for one player to defaults. */
+  resetBindings(player) {
+    for (const action of REMAPPABLE_ACTIONS) {
+      this.#KB[player][action] = structuredClone(DEFAULT_KB[player][action]);
     }
   }
 

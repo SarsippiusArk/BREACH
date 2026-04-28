@@ -3,6 +3,7 @@ const KEY = {
   PALETTE:  'breach_palette',
   UNLOCKS:  'breach_unlocks',
   HISCORE:  'breach_hiscore',
+  BINDINGS: 'breach_bindings',
 };
 
 const DEFAULT_SAVE = {
@@ -63,6 +64,11 @@ export const SaveManager = {
 
   getHiscore:   ()  => { try { return parseInt(localStorage.getItem(KEY.HISCORE)) || 0; } catch { return 0; } },
   writeHiscore: (s) => { try { localStorage.setItem(KEY.HISCORE, String(s)); } catch {} },
+
+  // Key bindings: stored as {p1:{action:[codes]}, p2:{action:[codes]}} or null
+  getBindings:   ()  => { try { const r = localStorage.getItem(KEY.BINDINGS); return r ? JSON.parse(r) : null; } catch { return null; } },
+  writeBindings: (d) => save(KEY.BINDINGS, d),
+  clearBindings: ()  => localStorage.removeItem(KEY.BINDINGS),
 
   hasSave: () => !!localStorage.getItem(KEY.SAVE),
 };

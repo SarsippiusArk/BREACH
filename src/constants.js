@@ -14,6 +14,7 @@ export const SCENES = {
   EXTRAS:       'extras',
   LEVEL_EDITOR: 'levelEditor',
   SAVE_EDITOR:  'saveEditor',
+  KEY_BINDINGS: 'keyBindings',
 };
 
 // Pilot definitions
