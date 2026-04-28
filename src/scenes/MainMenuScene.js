@@ -4,6 +4,14 @@ import { drawMenuStarfield, drawBREACHLogo, menuItem, px, panel, divider } from 
 import { drawButtonIcon } from '../draw/drawControllerIcons.js';
 import { CTRL } from '../engine/ControllerProfiles.js';
 
+// ── Title background ──────────────────────────────────────────────────────────
+let _titleBg = null;
+(function () {
+  const img = new Image();
+  img.onload = () => { _titleBg = img; };
+  img.src = './assets/title_bg.webp';
+}());
+
 // ── Logo image loader (white-removal via offscreen canvas) ────────────────────
 let _logoCanvas = null;
 (function loadLogo() {
@@ -118,7 +126,15 @@ export class MainMenuScene {
   }
 
   draw(ctx) {
-    drawMenuStarfield(ctx, this.#t);
+    // Background: rift image or animated starfield fallback
+    if (_titleBg) {
+      ctx.drawImage(_titleBg, 0, 0, GAME_W, GAME_H);
+      // Subtle dark vignette to keep text readable
+      ctx.fillStyle = 'rgba(0,2,18,0.45)';
+      ctx.fillRect(0, 0, GAME_W, GAME_H);
+    } else {
+      drawMenuStarfield(ctx, this.#t);
+    }
 
     // Logo — image version with white stripped, fallback to drawn text
     if (_logoCanvas) {
