@@ -2,6 +2,7 @@ import { GAME_W, GAME_H, SCENES, COL, PILOT_DATA } from '../constants.js';
 import { SaveManager } from '../engine/SaveManager.js';
 import { px, panel, drawMenuStarfield, divider } from '../draw/drawUI.js';
 import { drawAmyShip, drawRohanShip, drawAkaneShip, SHIP_W, SHIP_H } from '../draw/drawSprites.js';
+import { drawMusicNote } from '../draw/drawSprites.js';
 
 const DRAW_FNS = { amy: drawAmyShip, rohan: drawRohanShip, akane: drawAkaneShip };
 const PILOTS = ['amy','rohan','akane'];
@@ -19,7 +20,7 @@ export class ExtrasScene {
   #t = 0; #pilotIdx = 0; #slotIdx = 0;
   #colorIdxs = { amy:[0,0,0,0], rohan:[0,0,0,0], akane:[0,0,0,0] };
   #palette = null; #cooldown = 0;
-  #tab = 'palette'; // 'palette' | 'gallery'
+  #tab = 'palette'; // 'palette' | 'jukebox'
 
   constructor(gameState, audio) {
     this.#state = gameState;
@@ -52,14 +53,26 @@ export class ExtrasScene {
       this.#state.go(SCENES.MENU); return;
     }
 
-    // Navigate pilots
+    // Tab switch: shoulder buttons or Q/E
+    if (input.isPressed(0,'special') && this.#tab === 'palette' && this.#slotIdx === 0) {
+      // allow — handled below
+    }
+    // Simple tab nav via left/right on pilot row when no slot is active
+    // Use a dedicated tab key (mapped to 'fire2' or we detect via special+up)
+    // For simplicity: pressing UP past first slot wraps to Jukebox tab prompt
+    if (input.isPressed(0, 'confirm') && this.#tab === 'jukebox') {
+      this.#savePalette();
+      this.#state.go(SCENES.JUKEBOX); return;
+    }
+
+    // Navigate pilots / tab
     if (input.isPressed(0,'left') || input.isPressed(1,'left')) {
-      this.#pilotIdx = (this.#pilotIdx - 1 + PILOTS.length) % PILOTS.length;
-      this.#audio.playSound('menu'); this.#slotIdx = 0;
+      if (this.#tab === 'jukebox') { this.#tab = 'palette'; this.#audio.playSound('menu'); }
+      else { this.#pilotIdx = (this.#pilotIdx - 1 + PILOTS.length) % PILOTS.length; this.#audio.playSound('menu'); this.#slotIdx = 0; }
     }
     if (input.isPressed(0,'right') || input.isPressed(1,'right')) {
-      this.#pilotIdx = (this.#pilotIdx + 1) % PILOTS.length;
-      this.#audio.playSound('menu'); this.#slotIdx = 0;
+      if (this.#tab === 'palette' && this.#pilotIdx === PILOTS.length - 1) { this.#tab = 'jukebox'; this.#audio.playSound('menu'); }
+      else if (this.#tab === 'palette') { this.#pilotIdx = (this.#pilotIdx + 1) % PILOTS.length; this.#audio.playSound('menu'); this.#slotIdx = 0; }
     }
     // Navigate color slots
     if (input.isPressed(0,'up') || input.isPressed(1,'up')) {
@@ -94,16 +107,27 @@ export class ExtrasScene {
 
   draw(ctx) {
     drawMenuStarfield(ctx, this.#t);
+
+    if (this.#tab === 'jukebox') {
+      this.#drawJukeboxTab(ctx);
+      return;
+    }
     px(ctx, 'EXTRAS - SHIP COLORS', GAME_W/2, 8, COL.YELLOW, 6, 'center');
     divider(ctx, 24);
 
-    // Pilot tabs
+    // Pilot tabs + Jukebox tab
     PILOTS.forEach((pid, i) => {
-      const tx = 60 + i * 120, ty = 30;
-      const sel = i === this.#pilotIdx;
+      const tx = 50 + i * 100, ty = 30;
+      const sel = i === this.#pilotIdx && this.#tab === 'palette';
       px(ctx, PILOT_DATA[pid]?.name ?? pid, tx, ty, sel ? COL.YELLOW : COL.GRAY, 5, 'center');
       if (sel) { ctx.fillStyle = COL.ACCENT; ctx.fillRect(tx - 20, ty + 10, 40, 1); }
     });
+    // Jukebox tab
+    const jbSel = this.#tab === 'jukebox';
+    const jbX = 50 + PILOTS.length * 100;
+    drawMusicNote(ctx, jbX - 8, 21, jbSel ? this.#t : 0);
+    px(ctx, 'JUKEBOX', jbX + 6, 30, jbSel ? COL.YELLOW : COL.GRAY, 5, 'left');
+    if (jbSel) { ctx.fillStyle = COL.ACCENT; ctx.fillRect(jbX - 8, 40, 60, 1); }
 
     const pid = this.#currentPilot();
     const data = PILOT_DATA[pid];
@@ -139,5 +163,29 @@ export class ExtrasScene {
     divider(ctx, GAME_H - 22);
     px(ctx, 'FIRE/SPEC: CYCLE  UP/DW: SLOT  L/R: PILOT  ENTER: SAVE  ESC: BACK',
        GAME_W/2, GAME_H - 16, COL.GRAY, 3.5, 'center');
+  }
+
+  #drawJukeboxTab(ctx) {
+    const found = SaveManager.getJukebox().collectedNotes.length;
+    px(ctx, 'EXTRAS - SHIP COLORS', GAME_W/2, 8, COL.YELLOW, 6, 'center');
+    divider(ctx, 24);
+    // Tabs row (same as palette tab)
+    PILOTS.forEach((pid, i) => {
+      const tx = 50 + i * 100, ty = 30;
+      px(ctx, PILOT_DATA[pid]?.name ?? pid, tx, ty, COL.GRAY, 5, 'center');
+    });
+    const jbX = 50 + PILOTS.length * 100;
+    drawMusicNote(ctx, jbX - 8, 21, this.#t);
+    px(ctx, 'JUKEBOX', jbX + 6, 30, COL.YELLOW, 5, 'left');
+    ctx.fillStyle = COL.ACCENT; ctx.fillRect(jbX - 8, 40, 60, 1);
+    divider(ctx, 48);
+    // Jukebox summary
+    const noteY = GAME_H / 2 - 20;
+    drawMusicNote(ctx, GAME_W / 2 - 30, noteY, this.#t);
+    px(ctx, `${found} / 5 NOTES FOUND`, GAME_W / 2 - 14, noteY + 4, found > 0 ? COL.YELLOW : COL.GRAY, 6, 'left');
+    px(ctx, 'Find hidden musical notes in the levels', GAME_W / 2, noteY + 26, COL.GRAY, 4, 'center');
+    px(ctx, 'to unlock tracks in the Jukebox.', GAME_W / 2, noteY + 38, COL.GRAY, 4, 'center');
+    divider(ctx, GAME_H - 22);
+    px(ctx, 'ENTER: OPEN JUKEBOX   L/R: SWITCH TAB   ESC: BACK', GAME_W/2, GAME_H - 16, COL.GRAY, 3.5, 'center');
   }
 }

@@ -454,3 +454,47 @@ export function drawPowerUpPod(ctx, x, y, age = 0) {
     ctx.fillStyle = '#00DBDB'; ctx.fillRect(x+1, y+7, 14, 1);
   }
 }
+
+// ── Music Note collectible ─────────────────────────────────────────────────────
+export const NOTE_W = 12, NOTE_H = 14;
+
+export function drawMusicNote(ctx, x, y, age = 0) {
+  x = Math.round(x); y = Math.round(y);
+  const pulse = 1 + Math.sin(age * 3) * 0.08;
+  ctx.save();
+  ctx.translate(x + NOTE_W / 2, y + NOTE_H / 2);
+  ctx.scale(pulse, pulse);
+  const ox = -NOTE_W / 2, oy = -NOTE_H / 2;
+
+  // Glow aura
+  ctx.globalAlpha = 0.22 + Math.sin(age * 3) * 0.1;
+  ctx.fillStyle = '#FFDB00';
+  ctx.beginPath(); ctx.arc(2, 2, 9, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // Note head (filled ellipse-ish — 3×2 pixels)
+  ctx.fillStyle = '#FFDB00';
+  ctx.fillRect(ox + 2, oy + 10, 4, 3);
+  // Stem (vertical, right of head)
+  ctx.fillRect(ox + 5, oy + 2, 2, 10);
+  // Flag (top of stem)
+  ctx.fillStyle = '#FFEE88';
+  ctx.fillRect(ox + 7, oy + 2, 3, 2);
+  ctx.fillRect(ox + 8, oy + 4, 2, 2);
+  // White specular on head
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(ox + 3, oy + 11, 1, 1);
+
+  // Orbiting sparkles (3 dots)
+  const sr = 7;
+  for (let i = 0; i < 3; i++) {
+    const a = age * 2.5 + (Math.PI * 2 * i) / 3;
+    const sx = Math.round(Math.cos(a) * sr);
+    const sy = Math.round(Math.sin(a) * sr);
+    ctx.globalAlpha = 0.6 + Math.sin(age * 4 + i) * 0.3;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(sx, sy, 1, 1);
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}

@@ -14,7 +14,7 @@ git add -A
 
 # Check if there are changes to commit
 if git status --porcelain | grep -q .; then
-    git commit -m 'Add music copyright notice to title screen'
+    git commit -m 'Add Jukebox + hidden music note collectibles'
 fi
 
 # Get commit hash

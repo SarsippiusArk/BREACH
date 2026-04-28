@@ -1,4 +1,4 @@
-import { GAME_W, GAME_H, SCENES, COL } from '../constants.js';
+import { GAME_W, GAME_H, SCENES, COL, JUKEBOX_TRACKS } from '../constants.js';
 import { Camera } from '../engine/Camera.js';
 import { EntityManager } from '../engine/EntityManager.js';
 import { ParticleSystem } from '../engine/ParticleSystem.js';
@@ -7,6 +7,7 @@ import { SaveManager } from '../engine/SaveManager.js';
 import { checkGroups } from '../engine/CollisionSystem.js';
 import { createPlayer } from '../entities/Player.js';
 import { applyPowerUp } from '../entities/PowerUp.js';
+import { createMusicNote } from '../entities/MusicNote.js';
 import { drawBackground } from '../draw/drawBackground.js';
 import { drawHUD } from '../draw/drawHUD.js';
 import { px, panel } from '../draw/drawUI.js';
@@ -22,6 +23,8 @@ export class GameScene {
   #bossHp = null; #bossMaxHp = null;
   #levelNum = 1; #ngplus = false;
   #levelTitle = ''; #titleTimer = 3;
+  #noteStats = { hitCount: 0, killCount: 0, puCount: 0, notesSpawned: new Set() };
+  #noteNotif  = { text: '', timer: 0 };
 
   constructor(gameState, audio) {
     this.#state = gameState;
@@ -38,6 +41,8 @@ export class GameScene {
     this.#gameOver = false;
     this.#bossHp = null;
     this.#titleTimer = 3;
+    this.#noteStats = { hitCount: 0, killCount: 0, puCount: 0, notesSpawned: new Set() };
+    this.#noteNotif  = { text: '', timer: 0 };
 
     this.#camera = new Camera();
     this.#entities = new EntityManager();
@@ -132,6 +137,11 @@ export class GameScene {
         this.#bossHp    = e.hp;
         this.#bossMaxHp = e.maxHp;
       }
+      // Handle boss death from non-bullet causes (e.g. Earth Fleet auto-damage)
+      if (e.type === 'boss' && !e.alive && !e._deathHandled) {
+        e._deathHandled = true;
+        this.#onBossDeath(e);
+      }
     }
     if (!this.#entities.getGroup('boss').some(b => b.alive)) {
       this.#bossHp = null;
@@ -141,6 +151,7 @@ export class GameScene {
     for (const e of this.#entities.getGroup('playerBullet')) e.update?.(delta);
     for (const e of this.#entities.getGroup('enemyBullet'))  e.update?.(delta);
     for (const e of this.#entities.getGroup('powerup'))      e.update?.(delta);
+    for (const e of this.#entities.getGroup('musicNote'))    e.update?.(delta);
     this.#particles.update(delta);
 
     // Collisions
@@ -151,6 +162,10 @@ export class GameScene {
 
     // Level loader
     this.#loader.update(this.#camera.scrollX, this.#bossHp === null);
+
+    // Music note spawn criteria checks
+    this.#checkNoteSpawns(this.#camera.scrollX);
+    if (this.#noteNotif.timer > 0) this.#noteNotif.timer -= delta;
 
     // Game over check
     const allDead = this.#players.every(p => !p.alive && p.lives <= 0);
@@ -174,6 +189,7 @@ export class GameScene {
       if (!e.alive) {
         this.#score += e.score ?? 100;
         this.#hiScore = Math.max(this.#hiScore, this.#score);
+        this.#noteStats.killCount++;
         this.#particles.explode(e.x + e.w/2, e.y + e.h/2, e.kind === 'cruiser' ? 1.5 : 1);
         this.#audio.playSound(e.kind === 'cruiser' ? 'bigExp' : 'explosion');
         // Spawn any dropped power-ups immediately
@@ -186,15 +202,9 @@ export class GameScene {
     checkGroups(pBullets, bosses, (b, boss) => {
       boss.takeDamage?.(b.damage, b.x + b.w / 2, b.y + b.h / 2);
       b.alive = false;
-      if (!boss.alive) {
-        this.#score += boss.score ?? 5000;
-        this.#hiScore = Math.max(this.#hiScore, this.#score);
-        this.#particles.explode(boss.x + boss.w/2, boss.y + boss.h/2, 3, ['#FF4400','#FF8800','#FFEE00','#FF2200']);
-        this.#audio.playSound('bigExp');
-        this.#camera.resume();
-        this.#audio.startMusic(this.#loader.music);
-        boss.powersToSpawn?.forEach(p => this.#entities.add(p));
-        boss.powersToSpawn = [];
+      if (!boss.alive && !boss._deathHandled) {
+        boss._deathHandled = true;
+        this.#onBossDeath(boss);
       } else this.#audio.playSound('hit');
     });
 
@@ -203,6 +213,7 @@ export class GameScene {
       if (!p.alive) return;
       if (p.takeDamage?.(b.damage)) {
         b.alive = false;
+        this.#noteStats.hitCount++;
         this.#particles.explode(p.x + p.w/2, p.y + p.h/2, 0.8, ['#FFFFFF','#AACCFF','#4488FF']);
         this.#audio.playSound('explosion');
       } else {
@@ -215,6 +226,7 @@ export class GameScene {
     checkGroups(enemies, this.#players, (e, p) => {
       if (!p.alive || !e.alive) return;
       if (p.takeDamage?.(2)) {
+        this.#noteStats.hitCount++;
         this.#particles.explode(p.x + p.w/2, p.y + p.h/2, 1, ['#FFFFFF','#AACCFF']);
         this.#audio.playSound('explosion');
       }
@@ -226,10 +238,55 @@ export class GameScene {
       if (!p.alive) return;
       applyPowerUp(p, pu.subtype);
       pu.alive = false;
+      this.#noteStats.puCount++;
       this.#particles.sparkle(pu.x + pu.w/2, pu.y + pu.h/2, '#FFDD44');
       this.#audio.playSound(pu.subtype === 'life' ? 'lifeUp' : 'powerup');
       if (pu.subtype === 'life') SaveManager.writeHiscore(this.#hiScore);
     });
+
+    // Music notes → players
+    const musicNotes = this.#entities.getGroup('musicNote');
+    checkGroups(musicNotes, this.#players, (n, p) => {
+      if (!p.alive) return;
+      n.alive = false;
+      SaveManager.addJukeboxNote(n.noteId);
+      this.#noteNotif = { text: n.title, timer: 3.5 };
+      this.#audio.playSound('lifeUp');
+      this.#particles.sparkle(n.x + n.w/2, n.y + n.h/2, '#FFDB00');
+    });
+  }
+
+  #checkNoteSpawns(scrollX) {
+    const ns = this.#noteStats;
+    const spawn = (id, y) => {
+      if (ns.notesSpawned.has(id) || SaveManager.hasJukeboxNote(id)) return;
+      const track = JUKEBOX_TRACKS.find(t => t.id === id);
+      if (!track) return;
+      ns.notesSpawned.add(id);
+      this.#entities.add(createMusicNote(GAME_W + 10, y, id, track.title));
+    };
+    if (scrollX >= 650  && ns.hitCount  === 0)  spawn('note1', GAME_H * 0.50);
+    if (scrollX >= 1700 && ns.puCount   >= 3)   spawn('note2', GAME_H * 0.35);
+    if (scrollX >= 2600 && ns.killCount >= 30)  spawn('note3', GAME_H * 0.65);
+    if (scrollX >= 4500 && this.#score  >= 6000) spawn('note4', GAME_H * 0.50);
+  }
+
+  #onBossDeath(boss) {
+    this.#score   += boss.score ?? 5000;
+    this.#hiScore  = Math.max(this.#hiScore, this.#score);
+    this.#particles.explode(boss.x + boss.w/2, boss.y + boss.h/2, 3, ['#FF4400','#FF8800','#FFEE00','#FF2200']);
+    this.#audio.playSound('bigExp');
+    this.#camera.resume();
+    this.#audio.startMusic(this.#loader.music);
+    boss.powersToSpawn?.forEach(p => this.#entities.add(p));
+    boss.powersToSpawn = [];
+    // Note 5 — Into The Shadow: rewarded for defeating the Rift Sovereign
+    const ns = this.#noteStats;
+    if (!ns.notesSpawned.has('note5') && !SaveManager.hasJukeboxNote('note5')) {
+      ns.notesSpawned.add('note5');
+      const track = JUKEBOX_TRACKS.find(t => t.id === 'note5');
+      if (track) this.#entities.add(createMusicNote(boss.x + boss.w/2, boss.y + boss.h/2, 'note5', track.title));
+    }
   }
 
   #updatePause(input) {
@@ -273,7 +330,7 @@ export class GameScene {
     drawBackground(ctx, this.#camera.scrollX, this.#loader.theme);
 
     // Entities — all positions are screen-space, draw directly
-    for (const type of ['powerup','enemy','boss','playerBullet','player','enemyBullet']) {
+    for (const type of ['powerup','musicNote','enemy','boss','playerBullet','player','enemyBullet']) {
       for (const e of this.#entities.getGroup(type)) {
         try {
           e.draw?.(ctx);
@@ -295,6 +352,17 @@ export class GameScene {
       bossHp: this.#bossHp,
       bossMaxHp: this.#bossMaxHp,
     });
+
+    // Music note found notification
+    if (this.#noteNotif.timer > 0) {
+      const a = Math.min(1, this.#noteNotif.timer * 1.5, (3.5 - this.#noteNotif.timer) * 2);
+      ctx.globalAlpha = Math.min(1, a);
+      ctx.fillStyle = '#000828'; ctx.fillRect(GAME_W / 2 - 124, 6, 248, 18);
+      ctx.strokeStyle = '#FFDB00'; ctx.lineWidth = 1;
+      ctx.strokeRect(GAME_W / 2 - 124, 6, 248, 18);
+      px(ctx, `NOTE FOUND: ${this.#noteNotif.text}`, GAME_W / 2, 10, COL.YELLOW, 4, 'center');
+      ctx.globalAlpha = 1;
+    }
 
     // Level title
     if (this.#titleTimer > 0) {

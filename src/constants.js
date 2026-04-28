@@ -15,6 +15,7 @@ export const SCENES = {
   LEVEL_EDITOR: 'levelEditor',
   SAVE_EDITOR:  'saveEditor',
   KEY_BINDINGS: 'keyBindings',
+  JUKEBOX:      'jukebox',
 };
 
 // Pilot definitions
@@ -86,6 +87,15 @@ export const PILOT_DATA = {
     locked: true,
   },
 };
+
+// Jukebox track definitions — unlocked by collecting hidden musical notes in-game
+export const JUKEBOX_TRACKS = [
+  { id: 'note1', file: 'AfterHours.xm',        title: 'AFTER HOURS',         hint: 'Clear the opening section without taking a hit' },
+  { id: 'note2', file: 'homecoming.xm',         title: 'HOMECOMING',          hint: 'Collect 3 power-ups in a single run' },
+  { id: 'note3', file: 'InferiorityComplex.xm', title: 'INFERIORITY COMPLEX', hint: 'Destroy 30 enemies in one run' },
+  { id: 'note4', file: 'FeatsOfValor.xm',       title: 'FEATS OF VALOR',      hint: 'Reach 6,000 points before the boss' },
+  { id: 'note5', file: 'IntoTheShadow.xm',      title: 'INTO THE SHADOW',     hint: 'Defeat the Rift Sovereign' },
+];
 
 export const STARTER_PILOTS = ['amy', 'rohan', 'akane'];
 

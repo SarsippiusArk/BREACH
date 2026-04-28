@@ -4,6 +4,7 @@ const KEY = {
   UNLOCKS:  'breach_unlocks',
   HISCORE:  'breach_hiscore',
   BINDINGS: 'breach_bindings',
+  JUKEBOX:  'breach_jukebox',
 };
 
 const DEFAULT_SAVE = {
@@ -35,6 +36,10 @@ const DEFAULT_PALETTE = {
   secret1: ['#6D6D92', '#B6B6DB', '#DBDBFF', '#FFDB00'],
   secret2: ['#924900', '#FFDB00', '#FFFF00', '#FF6D00'],
   alien:   ['#006D49', '#49DB92', '#00FFDB', '#B600FF'],
+};
+
+const DEFAULT_JUKEBOX = {
+  collectedNotes: [], // array of note IDs e.g. ['note1','note3']
 };
 
 function load(key, def) {
@@ -71,4 +76,14 @@ export const SaveManager = {
   clearBindings: ()  => localStorage.removeItem(KEY.BINDINGS),
 
   hasSave: () => !!localStorage.getItem(KEY.SAVE),
+
+  getJukebox:     ()   => load(KEY.JUKEBOX, DEFAULT_JUKEBOX),
+  hasJukeboxNote: (id) => { try { const d = load(KEY.JUKEBOX, DEFAULT_JUKEBOX); return d.collectedNotes.includes(id); } catch { return false; } },
+  addJukeboxNote: (id) => {
+    const d = load(KEY.JUKEBOX, DEFAULT_JUKEBOX);
+    if (!d.collectedNotes.includes(id)) {
+      d.collectedNotes.push(id);
+      save(KEY.JUKEBOX, d);
+    }
+  },
 };

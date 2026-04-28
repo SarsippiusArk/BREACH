@@ -191,4 +191,22 @@ export class AudioManager {
     this.#currentTrack = null;
   }
 
+  /** Play an XM file directly by path (used by Jukebox). */
+  playFile(xmPath) {
+    this.stopMusic();
+    this.#getCtx();
+    this.#currentTrack = '__file__';
+    if (this.#ctx.state === 'suspended') return;
+    if (this.#tracker) {
+      this.#tracker.play(xmPath);
+    } else {
+      this.#tracker = new TrackerPlayer(this.#getCtx(), this.#musicGain);
+      this.#tracker.ready.then(() => {
+        if (this.#currentTrack === '__file__') this.#tracker.play(xmPath);
+      });
+    }
+  }
+
+  get currentTrack() { return this.#currentTrack; }
+
 }
