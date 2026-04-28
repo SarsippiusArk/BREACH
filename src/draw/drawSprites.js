@@ -2,13 +2,38 @@
 export const SHIP_W = 24;
 export const SHIP_H = 12;
 
+// ── Amy sprite atlas (blue_teal_viper stopgap) ───────────────────────────────
+const VIPER_FW = 701, VIPER_FH = 361; // pixels per frame in the atlas
+const VIPER_ROWS = { fly_straight: 0, fly_up: 1, fly_down: 2 };
+let _viperSheet = null;
+(function () {
+  const img = new Image();
+  img.onload = () => { _viperSheet = img; };
+  img.src = './assets/blue_teal_viper.webp';
+}());
+
 // ── TurboGrafx-16 jewel-tone palette — 3-bit per channel (0x00/24/49/6D/92/B6/DB/FF)
 // Player Ships ─────────────────────────────────────────────────────────────────
 
-/** Amy: blue twin-barrel interceptor */
+/** Amy: blue/teal Colonial Viper — sprite atlas with procedural fallback */
 export function drawAmyShip(ctx, x, y, pal, invincible) {
   if (invincible && Math.floor(Date.now() / 80) % 2) return;
   x = Math.round(x); y = Math.round(y);
+
+  // ── Sprite atlas path ──────────────────────────────────────────────────────
+  if (_viperSheet) {
+    const frameIdx = Math.floor(Date.now() / 110) % 8;
+    const sx = frameIdx * VIPER_FW;
+    const sy = VIPER_ROWS.fly_straight * VIPER_FH;
+    // Draw at 2.3× the hitbox size, centred over the hitbox
+    const DW = 56, DH = 29;
+    const dx = x + Math.round(SHIP_W / 2 - DW / 2);
+    const dy = y + Math.round(SHIP_H / 2 - DH / 2);
+    ctx.drawImage(_viperSheet, sx, sy, VIPER_FW, VIPER_FH, dx, dy, DW, DH);
+    return;
+  }
+
+  // ── Procedural fallback (used while image loads) ───────────────────────────
   const [m, li, ck, en] = pal || ['#0049DB','#00B6FF','#00DBFF','#FF9200'];
   const eg = Math.floor(Date.now() / 120) % 2 ? '#FFFF00' : '#FFB600';
   // Engine exhaust — animated hot core
