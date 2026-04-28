@@ -63,35 +63,110 @@ export function drawAmyShip(ctx, x, y, pal, invincible) {
   ctx.fillRect(x+22, y+3, 2, 1); ctx.fillRect(x+22, y+8, 2, 1);
 }
 
-/** Rohan: green heavy gunship — thick armor, dual exhaust, lock-on pods */
+// ── Rohan sprite atlas (Kilrathi heavy gunship — palette-swappable) ──────────
+const ROHAN_DEFAULT_PAL = ['#009200','#49DB00','#00DBDB','#FF9200'];
+let _kilrathiSheet = null;
+const _kilrathiFrames = {};   // { animName: [{x,y,w,h}, …] }
+const _kilrathiCache = new Map();
+
+(async function () {
+  try {
+    const [img, atlas] = await Promise.all([
+      new Promise(res => {
+        const i = new Image();
+        i.onload = () => res(i);
+        i.onerror = () => res(null);
+        i.src = './assets/kilrathi_gunship.webp';
+      }),
+      fetch('./assets/kilrathi_gunship.json').then(r => r.json()).catch(() => null),
+    ]);
+    if (!img || !atlas) return;
+    for (const f of (atlas.textures?.[0]?.frames ?? [])) {
+      const anim = f.filename.split('/')[0];
+      if (!_kilrathiFrames[anim]) _kilrathiFrames[anim] = [];
+      _kilrathiFrames[anim].push(f.frame);
+    }
+    _kilrathiSheet = img;
+  } catch { /* atlas unavailable — procedural fallback */ }
+}());
+
+function _hexRgb(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+/** Palette-swapped display-size canvas for one animation frame (cached). */
+function _kilrathiFrame(anim, frameIdx, pal) {
+  if (!_kilrathiSheet || !_kilrathiFrames[anim]?.length) return null;
+  const f = _kilrathiFrames[anim][frameIdx % _kilrathiFrames[anim].length];
+  const palKey = pal ? pal.join(',') : 'def';
+  const key = `${anim}:${frameIdx}:${palKey}`;
+  if (_kilrathiCache.has(key)) return _kilrathiCache.get(key);
+
+  const DW = 56, DH = 39;
+  const oc = document.createElement('canvas');
+  oc.width = DW; oc.height = DH;
+  const c2d = oc.getContext('2d');
+  c2d.imageSmoothingEnabled = false;
+  c2d.drawImage(_kilrathiSheet, f.x, f.y, f.w, f.h, 0, 0, DW, DH);
+
+  // Pixel-level palette swap: match each pixel to nearest default slot
+  const defRgbs = ROHAN_DEFAULT_PAL.map(_hexRgb);
+  const newRgbs = (pal ?? ROHAN_DEFAULT_PAL).map(_hexRgb);
+  const id = c2d.getImageData(0, 0, DW, DH);
+  const d = id.data;
+  const TOL = 30;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] < 10) continue;
+    for (let s = 0; s < 4; s++) {
+      const [dr, dg, db] = defRgbs[s];
+      if (Math.abs(d[i]-dr) + Math.abs(d[i+1]-dg) + Math.abs(d[i+2]-db) <= TOL) {
+        [d[i], d[i+1], d[i+2]] = newRgbs[s]; break;
+      }
+    }
+  }
+  c2d.putImageData(id, 0, 0);
+  _kilrathiCache.set(key, oc);
+  return oc;
+}
+
+/** Rohan: Kilrathi heavy gunship — palette-swappable atlas, procedural fallback */
 export function drawRohanShip(ctx, x, y, pal, invincible) {
   if (invincible && Math.floor(Date.now() / 80) % 2) return;
   x = Math.round(x); y = Math.round(y);
-  const [m, li, ck, en] = pal || ['#009200','#49DB00','#00DBDB','#FF9200'];
+
+  // ── Sprite atlas path (palette-swapped per frame) ─────────────────────────
+  if (_kilrathiSheet) {
+    const frameIdx = Math.floor(Date.now() / 120) % 8;
+    const frame = _kilrathiFrame('fly_straight', frameIdx, pal);
+    if (frame) {
+      const DW = 56, DH = 39;
+      const dx = x + Math.round(SHIP_W / 2 - DW / 2);
+      const dy = y + Math.round(SHIP_H / 2 - DH / 2);
+      ctx.drawImage(frame, 0, 0, DW, DH, dx, dy, DW, DH);
+      return;
+    }
+  }
+
+  // ── Procedural fallback ────────────────────────────────────────────────────
+  const [m, li, ck, en] = pal || ROHAN_DEFAULT_PAL;
   const eg = Math.floor(Date.now() / 140) % 2 ? '#FFDB00' : '#FF9200';
-  // Dual exhausts (heavier ship)
   ctx.fillStyle = eg;
   ctx.fillRect(x, y+3, 1, 2); ctx.fillRect(x, y+7, 1, 2);
   ctx.fillStyle = en;
   ctx.fillRect(x+1, y+3, 2, 3); ctx.fillRect(x+1, y+7, 2, 2);
-  // Dark hull base + armor plate
   ctx.fillStyle = '#002400';
   ctx.fillRect(x+2, y+1, 4, 2); ctx.fillRect(x+2, y+9, 4, 2);
-  ctx.fillStyle = '#494949'; ctx.fillRect(x+3, y+3, 2, 6); // gray armor
-  // Main hull — thick wings
+  ctx.fillStyle = '#494949'; ctx.fillRect(x+3, y+3, 2, 6);
   ctx.fillStyle = m;
   ctx.fillRect(x+4, y+1, 6, 3); ctx.fillRect(x+4, y+8, 6, 3);
   ctx.fillRect(x+4, y+3, 14, 6);
-  // Hull highlight
   ctx.fillStyle = li; ctx.fillRect(x+6, y+4, 7, 4);
-  // Missile pod indicators on wings
   ctx.fillStyle = '#002400';
   ctx.fillRect(x+4, y+2, 5, 1); ctx.fillRect(x+4, y+9, 5, 1);
-  // Cockpit
   ctx.fillStyle = '#004900'; ctx.fillRect(x+10, y+3, 4, 6);
   ctx.fillStyle = ck; ctx.fillRect(x+11, y+4, 2, 4);
   ctx.fillStyle = '#DBFFFF'; ctx.fillRect(x+11, y+4, 1, 1);
-  // Heavy single cannon
   ctx.fillStyle = '#494949'; ctx.fillRect(x+18, y+4, 6, 4);
   ctx.fillStyle = '#929292'; ctx.fillRect(x+17, y+5, 7, 2);
   ctx.fillStyle = '#DBDBDB'; ctx.fillRect(x+22, y+5, 2, 2);
