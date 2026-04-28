@@ -156,6 +156,9 @@ export class MainMenuScene {
     px(ctx, `HI-SCORE ${String(SaveManager.getHiscore()).padStart(8,'0')}`,
        GAME_W / 2, GAME_H * 0.87, COL.YELLOW, 5, 'center');
 
+    // Copyright notice
+    px(ctx, 'Music Composed & Copyright Elwood', GAME_W - 4, GAME_H - 5, COL.GRAY, 4, 'right');
+
     // Controller hint
     drawButtonIcon(ctx, 'confirm', CTRL.KEYBOARD, GAME_W / 2 - 24, GAME_H - 10, 10);
     px(ctx, 'SELECT', GAME_W / 2 - 16, GAME_H - 14, COL.GRAY, 4);
