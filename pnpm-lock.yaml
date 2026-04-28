@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      chiptune3:
+        specifier: ^0.8.6
+        version: 0.8.6
     devDependencies:
       vite:
         specifier: ^7.2.2
@@ -298,6 +302,9 @@ packages:
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
 
+  chiptune3@0.8.6:
+    resolution: {integrity: sha512-dyCectbf4BdicWotvaNzyG4wrIAUXEYXEtka+aEvhPwF8wg8Jo+gNui5DA9+BC1OaPST753OZpRAISjTtDW/RQ==}
+
   esbuild@0.27.5:
     resolution: {integrity: sha512-zdQoHBjuDqKsvV5OPaWansOwfSQ0Js+Uj9J85TBvj3bFW1JjWTSULMRwdQAc8qMeIScbClxeMK0jlrtB9linhA==}
     engines: {node: '>=18'}
@@ -542,6 +549,8 @@ snapshots:
     optional: true
 
   '@types/estree@1.0.8': {}
+
+  chiptune3@0.8.6: {}
 
   esbuild@0.27.5:
     optionalDependencies:

@@ -1,6 +1,18 @@
+import { TrackerPlayer } from './TrackerPlayer.js';
+
+// ── Track assignments ──────────────────────────────────────────────────────────
+// Change these to swap which XM file plays in each context.
+const TRACK_MAP = {
+  menu:   'experience.xm',
+  level1: 'deadlock.xm',
+  boss:   'FallFromSky.xm',
+  // Reserve tracks (assign to future levels):
+  // AfterHours.xm  InferiorityComplex.xm  FeatsOfValor.xm
+  // homecoming.xm  IntoTheShadow.xm
+};
+
 /**
- * AudioManager: Web Audio API music and SFX synthesizer.
- * Music is procedurally generated; no external audio files required.
+ * AudioManager: tracker music (XM via chiptune3/libopenmpt) + Web Audio SFX.
  * Call resume() on first user interaction to start the AudioContext.
  */
 export class AudioManager {
@@ -8,10 +20,9 @@ export class AudioManager {
   #masterGain = null;
   #musicGain = null;
   #sfxGain = null;
-  #scheduler = null;
-  #noteIdx = 0;
-  #nextNoteTime = 0;
+  #scheduler = null;   // synth fallback scheduler (cleared once tracker loads)
   #currentTrack = null;
+  #tracker = null;     // TrackerPlayer instance
 
   #getCtx() {
     if (!this.#ctx) {
@@ -32,9 +43,16 @@ export class AudioManager {
   resume() {
     const c = this.#getCtx();
     if (c.state === 'suspended') c.resume();
+    // Kick off tracker init (async, non-blocking)
+    if (!this.#tracker) {
+      this.#tracker = new TrackerPlayer(c, this.#musicGain);
+    }
   }
 
-  setMusicVolume(v) { if (this.#musicGain) this.#musicGain.gain.value = v * 0.55; }
+  setMusicVolume(v) {
+    if (this.#musicGain) this.#musicGain.gain.value = v * 0.55;
+    if (this.#tracker)  this.#tracker.setVolume(v);
+  }
   setSFXVolume(v)   { if (this.#sfxGain)  this.#sfxGain.gain.value  = v * 0.8;  }
 
   // ── SFX ──────────────────────────────────────────────────────────────────
@@ -146,135 +164,26 @@ export class AudioManager {
     this.#getCtx();
     if (this.#ctx.state === 'suspended') return;
     this.#currentTrack = trackId;
-    this.#noteIdx = 0;
-    this.#nextNoteTime = this.#ctx.currentTime + 0.05;
-    if (trackId === 'level1') this.#scheduleLevel1();
-    else if (trackId === 'menu') this.#scheduleMenu();
-    else if (trackId === 'boss') this.#scheduleBoss();
+    const xmFile = TRACK_MAP[trackId];
+    if (xmFile && this.#tracker) {
+      // Tracker ready — play the XM file (loops automatically)
+      this.#tracker.play(`./music/${xmFile}`);
+    } else if (xmFile && !this.#tracker) {
+      // Tracker not initialised yet (no user interaction) — init then play
+      this.#tracker = new TrackerPlayer(this.#getCtx(), this.#musicGain);
+      this.#tracker.ready.then(() => {
+        if (this.#currentTrack === trackId) {
+          this.#tracker.play(`./music/${xmFile}`);
+        }
+      });
+    }
+    // No XM mapped for this trackId — silence is fine
   }
 
   stopMusic() {
     if (this.#scheduler) { clearInterval(this.#scheduler); this.#scheduler = null; }
+    if (this.#tracker) this.#tracker.stop();
     this.#currentTrack = null;
   }
 
-  // Level 1 music: jazz/electronica fusion, E minor, 128 BPM
-  #scheduleLevel1() {
-    const bpm = 128, beat = 60 / bpm, eighth = beat / 2, sixteenth = beat / 4;
-    const Em = [82.4, 98.0, 110.0, 123.5, 146.8, 164.8, 196.0, 220.0, 246.9, 293.7, 329.6];
-    // Bass walk pattern (16 sixteenth notes)
-    const bassNotes = [0, null, 2, 3, 4, null, 3, 2, 0, null, 2, 5, 6, null, 4, 2];
-    // Melody arpeggios
-    const melNotes  = [4, 6, 8, 10, 8, 6, 7, 5, 4, 7, 9, 10, 9, 7, 8, 6];
-    let bassIdx = 0, melIdx = 0;
-    let nextBass = this.#nextNoteTime, nextMel = this.#nextNoteTime + sixteenth * 2;
-    let nextKick = this.#nextNoteTime, nextHat = this.#nextNoteTime;
-    let nextChord = this.#nextNoteTime;
-    const chordRoots = [0, 5, 7, 0]; // Em, Am, Bm, Em degrees
-    let chordIdx = 0;
-
-    this.#scheduler = setInterval(() => {
-      if (!this.#ctx || this.#ctx.state !== 'running') return;
-      const lookahead = this.#ctx.currentTime + 0.15;
-      // Kick on beats 1 and 3
-      while (nextKick < lookahead) {
-        this.#schedKick(nextKick); nextKick += beat * 2;
-      }
-      // Hi-hat every eighth note
-      while (nextHat < lookahead) {
-        this.#schedHat(nextHat); nextHat += eighth;
-      }
-      // Bass
-      while (nextBass < lookahead) {
-        const n = bassNotes[bassIdx % bassNotes.length];
-        if (n !== null) this.#schedBass(nextBass, Em[n] * 0.5, sixteenth * 1.8);
-        bassIdx++;
-        nextBass += sixteenth;
-      }
-      // Melody
-      while (nextMel < lookahead) {
-        const n = melNotes[melIdx % melNotes.length];
-        this.#schedMel(nextMel, Em[n] * 2, sixteenth * 0.8);
-        melIdx++;
-        nextMel += sixteenth * 2;
-      }
-      // Chord pads every 2 beats
-      while (nextChord < lookahead) {
-        const root = Em[chordRoots[chordIdx % chordRoots.length]];
-        this.#schedChord(nextChord, [root * 2, root * 2.5, root * 3, root * 4], beat * 2);
-        chordIdx++;
-        nextChord += beat * 2;
-      }
-    }, 25);
-  }
-
-  #schedKick(t) {
-    const c = this.#ctx, g = c.createGain();
-    g.connect(this.#musicGain);
-    g.gain.setValueAtTime(0.8, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
-    const o = c.createOscillator(); o.type = 'sine';
-    o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.18);
-    o.connect(g); o.start(t); o.stop(t + 0.2);
-  }
-  #schedHat(t) {
-    const c = this.#ctx, buf = c.createBuffer(1, Math.ceil(c.sampleRate * 0.04), c.sampleRate);
-    const d = buf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-    const src = c.createBufferSource(); src.buffer = buf;
-    const g = c.createGain(); g.gain.setValueAtTime(0.18, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
-    const f = c.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 8000;
-    src.connect(f); f.connect(g); g.connect(this.#musicGain); src.start(t);
-  }
-  #schedBass(t, freq, dur) {
-    const c = this.#ctx, g = c.createGain();
-    g.connect(this.#musicGain);
-    g.gain.setValueAtTime(0.5, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = freq;
-    const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 600;
-    o.connect(f); f.connect(g); o.start(t); o.stop(t + dur + 0.01);
-  }
-  #schedMel(t, freq, dur) {
-    const c = this.#ctx, g = c.createGain(); g.connect(this.#musicGain);
-    g.gain.setValueAtTime(0.18, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = freq;
-    o.connect(g); o.start(t); o.stop(t + dur + 0.01);
-  }
-  #schedChord(t, freqs, dur) {
-    const c = this.#ctx;
-    for (const freq of freqs) {
-      const g = c.createGain(); g.connect(this.#musicGain);
-      g.gain.setValueAtTime(0.06, t); g.gain.linearRampToValueAtTime(0.06, t + dur * 0.8);
-      g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-      const o = c.createOscillator(); o.type = 'triangle'; o.frequency.value = freq;
-      o.connect(g); o.start(t); o.stop(t + dur + 0.01);
-    }
-  }
-
-  #scheduleMenu() {
-    const bpm = 90, beat = 60 / bpm, eighth = beat / 2;
-    let nextNote = this.#ctx.currentTime, noteIdx = 0;
-    const drone = [110, 146.8, 164.8, 196, 220];
-    this.#scheduler = setInterval(() => {
-      if (!this.#ctx || this.#ctx.state !== 'running') return;
-      const la = this.#ctx.currentTime + 0.15;
-      while (nextNote < la) {
-        this.#schedMel(nextNote, drone[noteIdx % drone.length] * 2, eighth * 0.7);
-        noteIdx++; nextNote += eighth * 1.5;
-      }
-    }, 25);
-  }
-
-  #scheduleBoss() {
-    const bpm = 160, beat = 60 / bpm, eighth = beat / 2;
-    const notes = [82.4, 87.3, 82.4, 77.8, 73.4, 77.8, 87.3, 92.5];
-    let nextNote = this.#ctx.currentTime, nextKick = this.#ctx.currentTime, noteIdx = 0;
-    this.#scheduler = setInterval(() => {
-      if (!this.#ctx || this.#ctx.state !== 'running') return;
-      const la = this.#ctx.currentTime + 0.15;
-      while (nextKick < la) { this.#schedKick(nextKick); nextKick += beat; }
-      while (nextNote < la) {
-        this.#schedBass(nextNote, notes[noteIdx % notes.length], eighth * 0.9);
-        noteIdx++; nextNote += eighth;
-      }
-    }, 25);
-  }
 }
