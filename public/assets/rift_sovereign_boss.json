@@ -1,0 +1,183 @@
+{
+  "textures": [
+    {
+      "image": "rift_sovereign_boss.webp",
+      "format": "RGBA8888",
+      "size": {
+        "w": 5280,
+        "h": 279
+      },
+      "scale": 1,
+      "frames": [
+        {
+          "filename": "fly_straight/frame0000",
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "w": 660,
+            "h": 279
+          },
+          "rotated": false,
+          "trimmed": false,
+          "spriteSourceSize": {
+            "x": 0,
+            "y": 0,
+            "w": 660,
+            "h": 279
+          },
+          "sourceSize": {
+            "w": 660,
+            "h": 279
+          }
+        },
+        {
+          "filename": "fly_straight/frame0001",
+          "frame": {
+            "x": 660,
+            "y": 0,
+            "w": 660,
+            "h": 279
+          },
+          "rotated": false,
+          "trimmed": false,
+          "spriteSourceSize": {
+            "x": 0,
+            "y": 0,
+            "w": 660,
+            "h": 279
+          },
+          "sourceSize": {
+            "w": 660,
+            "h": 279
+          }
+        },
+        {
+          "filename": "fly_straight/frame0002",
+          "frame": {
+            "x": 1320,
+            "y": 0,
+            "w": 660,
+            "h": 279
+          },
+          "rotated": false,
+          "trimmed": false,
+          "spriteSourceSize": {
+            "x": 0,
+            "y": 0,
+            "w": 660,
+            "h": 279
+          },
+          "sourceSize": {
+            "w": 660,
+            "h": 279
+          }
+        },
+        {
+          "filename": "fly_straight/frame0003",
+          "frame": {
+            "x": 1980,
+            "y": 0,
+            "w": 660,
+            "h": 279
+          },
+          "rotated": false,
+          "trimmed": false,
+          "spriteSourceSize": {
+            "x": 0,
+            "y": 0,
+            "w": 660,
+            "h": 279
+          },
+          "sourceSize": {
+            "w": 660,
+            "h": 279
+          }
+        },
+        {
+          "filename": "fly_straight/frame0004",
+          "frame": {
+            "x": 2640,
+            "y": 0,
+            "w": 660,
+            "h": 279
+          },
+          "rotated": false,
+          "trimmed": false,
+          "spriteSourceSize": {
+            "x": 0,
+            "y": 0,
+            "w": 660,
+            "h": 279
+          },
+          "sourceSize": {
+            "w": 660,
+            "h": 279
+          }
+        },
+        {
+          "filename": "fly_straight/frame0005",
+          "frame": {
+            "x": 3300,
+            "y": 0,
+            "w": 660,
+            "h": 279
+          },
+          "rotated": false,
+          "trimmed": false,
+          "spriteSourceSize": {
+            "x": 0,
+            "y": 0,
+            "w": 660,
+            "h": 279
+          },
+          "sourceSize": {
+            "w": 660,
+            "h": 279
+          }
+        },
+        {
+          "filename": "fly_straight/frame0006",
+          "frame": {
+            "x": 3960,
+            "y": 0,
+            "w": 660,
+            "h": 279
+          },
+          "rotated": false,
+          "trimmed": false,
+          "spriteSourceSize": {
+            "x": 0,
+            "y": 0,
+            "w": 660,
+            "h": 279
+          },
+          "sourceSize": {
+            "w": 660,
+            "h": 279
+          }
+        },
+        {
+          "filename": "fly_straight/frame0007",
+          "frame": {
+            "x": 4620,
+            "y": 0,
+            "w": 660,
+            "h": 279
+          },
+          "rotated": false,
+          "trimmed": false,
+          "spriteSourceSize": {
+            "x": 0,
+            "y": 0,
+            "w": 660,
+            "h": 279
+          },
+          "sourceSize": {
+            "w": 660,
+            "h": 279
+          }
+        }
+      ]
+    }
+  ]
+}

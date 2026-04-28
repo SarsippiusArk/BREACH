@@ -49,7 +49,7 @@ export class GameScene {
     this.#loader.onSpawnEntity = (e) => this.#entities.add(e);
     this.#loader.onBossAppear  = (kind) => {
       this.#camera.pause();
-      if (kind === 'leviathan') this.#audio.startMusic('boss');
+      if (kind === 'rift_sovereign' || kind === 'leviathan') this.#audio.startMusic('boss');
     };
     this.#loader.onLevelComplete = () => { this.#levelComplete = true; this.#completeTimer = 3.5; };
 
@@ -184,7 +184,7 @@ export class GameScene {
 
     // Player bullets → bosses
     checkGroups(pBullets, bosses, (b, boss) => {
-      boss.takeDamage?.(b.damage);
+      boss.takeDamage?.(b.damage, b.x + b.w / 2, b.y + b.h / 2);
       b.alive = false;
       if (!boss.alive) {
         this.#score += boss.score ?? 5000;

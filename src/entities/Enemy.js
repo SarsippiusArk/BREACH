@@ -1,21 +1,29 @@
 import { GAME_H, GAME_W } from '../constants.js';
-import { drawFighterDrone, drawMissileFrigate, drawArmorCruiser, DRONE_W, DRONE_H, FRIGATE_W, FRIGATE_H, CRUISER_W, CRUISER_H } from '../draw/drawSprites.js';
+import { drawFighterDrone, drawMissileFrigate, drawArmorCruiser, drawRiftShardDrone, drawPhaseWalkerWarship, drawVoidLeech, drawPowerUpPod, DRONE_W, DRONE_H, FRIGATE_W, FRIGATE_H, CRUISER_W, CRUISER_H, RIFT_SHARD_W, RIFT_SHARD_H, PHASE_WALK_W, PHASE_WALK_H, VOID_LEECH_W, VOID_LEECH_H, POD_W, POD_H } from '../draw/drawSprites.js';
 import { createEnemyBullet, createAimedBullet } from './EnemyBullet.js';
 import { createPowerUp } from './PowerUp.js';
 
 const DRAW_MAP = {
-  drone:   { fn: drawFighterDrone, w: DRONE_W,   h: DRONE_H   },
-  frigate: { fn: drawMissileFrigate, w: FRIGATE_W, h: FRIGATE_H },
-  cruiser: { fn: drawArmorCruiser,   w: CRUISER_W, h: CRUISER_H },
+  drone:        { fn: drawFighterDrone,      w: DRONE_W,      h: DRONE_H      },
+  frigate:      { fn: drawMissileFrigate,    w: FRIGATE_W,    h: FRIGATE_H    },
+  cruiser:      { fn: drawArmorCruiser,      w: CRUISER_W,    h: CRUISER_H    },
+  rift_shard:   { fn: drawRiftShardDrone,    w: RIFT_SHARD_W, h: RIFT_SHARD_H },
+  phase_walker: { fn: drawPhaseWalkerWarship,w: PHASE_WALK_W, h: PHASE_WALK_H },
+  void_leech:   { fn: drawVoidLeech,         w: VOID_LEECH_W, h: VOID_LEECH_H },
+  pod:          { fn: drawPowerUpPod,        w: POD_W,        h: POD_H        },
 };
 
 const DROP_TABLE = {
-  drone:   [null, null, null, 'rapid', 'speed', null, null, 'special'],
-  frigate: [null, 'rapid', 'charge', 'shield', 'special', null],
-  cruiser: ['charge', 'shield', 'special', null, 'life', 'rapid'],
+  drone:        [null, null, null, 'rapid', 'speed', null, null, 'special'],
+  frigate:      [null, 'rapid', 'charge', 'shield', 'special', null],
+  cruiser:      ['charge', 'shield', 'special', null, 'life', 'rapid'],
+  rift_shard:   [null, null, null, 'rapid', null, null],
+  phase_walker: [null, 'charge', 'shield', null, 'special', null],
+  void_leech:   ['charge', 'shield', 'special', null, 'life', null],
+  pod:          [], // always uses forced drop from opts
 };
 
-const SCORE_VALUES = { drone: 100, frigate: 300, cruiser: 800 };
+const SCORE_VALUES = { drone: 100, frigate: 300, cruiser: 800, rift_shard: 150, phase_walker: 400, void_leech: 900, pod: 50 };
 
 /**
  * Create an enemy entity.
@@ -26,10 +34,10 @@ const SCORE_VALUES = { drone: 100, frigate: 300, cruiser: 800 };
  */
 export function createEnemy(kind, worldX, y, opts = {}) {
   const def = DRAW_MAP[kind];
-  const hp = opts.hp ?? (kind === 'drone' ? 1 : kind === 'frigate' ? 3 : 6);
+  const hp = opts.hp ?? (kind === 'drone' ? 1 : kind === 'frigate' ? 3 : kind === 'rift_shard' ? 1 : kind === 'phase_walker' ? 3 : kind === 'void_leech' ? 6 : kind === 'pod' ? 1 : 6);
   const pattern = opts.pattern ?? 'straight';
   const phase = opts.patternPhase ?? (Math.random() * Math.PI * 2);
-  const baseVx = opts.vx ?? (kind === 'drone' ? -80 : kind === 'frigate' ? -55 : -35);
+  const baseVx = opts.vx ?? (kind === 'drone' ? -80 : kind === 'frigate' ? -55 : kind === 'rift_shard' ? -90 : kind === 'phase_walker' ? -60 : kind === 'void_leech' ? -38 : kind === 'pod' ? -45 : -35);
 
   return {
     type: 'enemy',
@@ -40,7 +48,7 @@ export function createEnemy(kind, worldX, y, opts = {}) {
     hp, maxHp: hp,
     vx: baseVx, vy: 0,
     age: 0,
-    fireTimer: opts.fireDelay ?? (0.5 + Math.random() * 1.5),
+    fireTimer: (kind === 'pod') ? Infinity : (opts.fireDelay ?? (0.5 + Math.random() * 1.5)),
     pattern,
     phase,
     originY: y,
@@ -123,6 +131,7 @@ export function createEnemy(kind, worldX, y, opts = {}) {
       const drawFn = DRAW_MAP[this.kind]?.fn;
       if (drawFn) {
         if (this.kind === 'cruiser') drawFn(ctx, this.x, this.y, this.hp, this.maxHp);
+        else if (this.kind === 'pod') drawFn(ctx, this.x, this.y, this.age);
         else drawFn(ctx, this.x, this.y);
       }
       // Hit flash

@@ -1,3 +1,5 @@
+import { loadAtlas, atlasFrame } from '../engine/AtlasLoader.js';
+
 // ── Player Ship Dimensions (collision hitboxes) ──────────────────────────────
 export const SHIP_W = 24;
 export const SHIP_H = 12;
@@ -337,5 +339,86 @@ export function drawEnemyBullet(ctx, x, y, type = 'normal') {
     ctx.fillStyle = '#B60000'; ctx.fillRect(x, y+1, 6, 3);
     ctx.fillStyle = '#FF6D00'; ctx.fillRect(x+1, y+1, 3, 2);
     ctx.fillStyle = '#FF9200'; ctx.fillRect(x+1, y+2, 2, 1);
+  }
+}
+
+// ── Hyper-dimensional enemy sprite atlases ────────────────────────────────────
+const _riftShardAtlas     = loadAtlas('./assets/rift_shard_drone.webp',     './assets/rift_shard_drone.json');
+const _phaseWalkerAtlas   = loadAtlas('./assets/phase_walker_warship.webp', './assets/phase_walker_warship.json');
+const _voidLeechAtlas     = loadAtlas('./assets/void_leech.webp',           './assets/void_leech.json');
+const _powerUpPodAtlas    = loadAtlas('./assets/power_up_pod.webp',         './assets/power_up_pod.json');
+
+// ── New enemy hitbox sizes ─────────────────────────────────────────────────────
+export const RIFT_SHARD_W  = 20, RIFT_SHARD_H  = 13;
+export const PHASE_WALK_W  = 34, PHASE_WALK_H  = 18;
+export const VOID_LEECH_W  = 46, VOID_LEECH_H  = 16;
+export const POD_W         = 16, POD_H         = 14;
+
+/** Rift Shard Drone — crystalline hyper-dim alien fast attacker */
+export function drawRiftShardDrone(ctx, x, y) {
+  x = Math.round(x); y = Math.round(y);
+  const fi = Math.floor(Date.now() / 120) % 8;
+  const DW = 32, DH = 21;
+  const dx = x + Math.round(RIFT_SHARD_W / 2 - DW / 2);
+  const dy = y + Math.round(RIFT_SHARD_H / 2 - DH / 2);
+  if (!atlasFrame(ctx, _riftShardAtlas, 'fly_straight', fi, dx, dy, DW, DH)) {
+    // Procedural fallback — teal/magenta crystal shard
+    ctx.fillStyle = '#240049'; ctx.fillRect(x, y+3, 14, 7);
+    ctx.fillStyle = '#6600CC'; ctx.fillRect(x+2, y+4, 8, 5);
+    ctx.fillStyle = '#00DBDB'; ctx.fillRect(x+4, y+5, 4, 3);
+    ctx.fillStyle = '#FF00FF'; ctx.fillRect(x+12, y+5, 8, 3);
+    ctx.fillStyle = '#CC00FF'; ctx.fillRect(x+18, y+4, 2, 1);
+  }
+}
+
+/** Phase Walker Warship — violet arrowhead with ghost dimensional layers */
+export function drawPhaseWalkerWarship(ctx, x, y) {
+  x = Math.round(x); y = Math.round(y);
+  const fi = Math.floor(Date.now() / 130) % 8;
+  const DW = 50, DH = 27;
+  const dx = x + Math.round(PHASE_WALK_W / 2 - DW / 2);
+  const dy = y + Math.round(PHASE_WALK_H / 2 - DH / 2);
+  if (!atlasFrame(ctx, _phaseWalkerAtlas, 'fly_straight', fi, dx, dy, DW, DH)) {
+    // Procedural fallback — deep violet arrowhead
+    ctx.fillStyle = '#1A0044'; ctx.fillRect(x, y+5, 28, 8);
+    ctx.fillStyle = '#4400AA'; ctx.fillRect(x+4, y+4, 20, 10);
+    ctx.fillStyle = '#7700DD'; ctx.fillRect(x+10, y+5, 12, 8);
+    ctx.fillStyle = '#00DBFF'; ctx.fillRect(x+26, y+7, 8, 4);
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = '#AA44FF'; ctx.fillRect(x+2, y+3, 24, 12);
+    ctx.globalAlpha = 1;
+  }
+}
+
+/** Void Leech — bio-crystal heavy cruiser with crimson bioluminescence */
+export function drawVoidLeech(ctx, x, y) {
+  x = Math.round(x); y = Math.round(y);
+  const fi = Math.floor(Date.now() / 140) % 8;
+  const DW = 60, DH = 20;
+  const dx = x + Math.round(VOID_LEECH_W / 2 - DW / 2);
+  const dy = y + Math.round(VOID_LEECH_H / 2 - DH / 2);
+  if (!atlasFrame(ctx, _voidLeechAtlas, 'fly_straight', fi, dx, dy, DW, DH)) {
+    // Procedural fallback — dark crystal with red veins
+    ctx.fillStyle = '#060606'; ctx.fillRect(x, y+2, 42, 12);
+    ctx.fillStyle = '#1A0000'; ctx.fillRect(x+4, y+2, 32, 12);
+    ctx.fillStyle = '#B60000'; ctx.fillRect(x+8, y+4, 18, 8);
+    ctx.fillStyle = '#FF2200'; ctx.fillRect(x+12, y+6, 8, 4);
+    ctx.fillStyle = '#490000'; ctx.fillRect(x+36, y+4, 10, 8);
+  }
+}
+
+/** Power-Up Pod — R-Type-style drop pod; uses age for teal orbit ring phase */
+export function drawPowerUpPod(ctx, x, y, age = 0) {
+  x = Math.round(x); y = Math.round(y);
+  const fi = Math.floor((age ?? Date.now() * 0.001) * 8) % 8;
+  const DW = 28, DH = 16;
+  const dx = x + Math.round(POD_W / 2 - DW / 2);
+  const dy = y + Math.round(POD_H / 2 - DH / 2);
+  if (!atlasFrame(ctx, _powerUpPodAtlas, 'fly_straight', fi, dx, dy, DW, DH)) {
+    // Procedural fallback — gold orb pod
+    ctx.fillStyle = '#494949'; ctx.fillRect(x+1, y+1, 14, 12);
+    ctx.fillStyle = '#DBDB00'; ctx.fillRect(x+4, y+3, 8, 8);
+    ctx.fillStyle = '#FFFF00'; ctx.fillRect(x+5, y+4, 6, 6);
+    ctx.fillStyle = '#00DBDB'; ctx.fillRect(x+1, y+7, 14, 1);
   }
 }

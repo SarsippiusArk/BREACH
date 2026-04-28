@@ -1,7 +1,8 @@
 import { createEnemy } from '../entities/Enemy.js';
 import { createPowerUp } from '../entities/PowerUp.js';
-import { createSentinel, createLeviathan } from '../entities/Boss.js';
-import { GAME_H } from '../constants.js';
+import { createSentinel } from '../entities/Boss.js';
+import { createRiftSovereign } from '../entities/RiftSovereign.js';
+import { GAME_H, GAME_W } from '../constants.js';
 
 // Convenience: spawn Y positions (screen-space, 0 = top)
 const TOP    = GAME_H * 0.15;
@@ -14,6 +15,11 @@ const BOT    = GAME_H * 0.85;
 
 /** Level 1 event definitions. triggerX = scrollX that activates this event. */
 export const LEVEL1_EVENTS = [
+  // ── Power-Up Pod: rapid fire (early reward) ─────────────────────────────
+  { triggerX: 350, type: 'wave', spawns: [
+    { kind:'pod', worldOff: 0, y: CENTER, opts:{ drop:'rapid' } },
+  ]},
+
   // ── Wave 1: V-formation drones ───────────────────────────────────────────
   { triggerX: 150, type: 'wave', spawns: [
     { kind:'drone', worldOff: 20, y: UPPER,   opts:{pattern:'straight'} },
@@ -39,6 +45,12 @@ export const LEVEL1_EVENTS = [
     { kind:'drone',   worldOff:120, y: CENTER, opts:{pattern:'straight'} },
   ]},
 
+  // ── Power-Up Pod: charge shot ──────────────────────────────────────────────
+  { triggerX: 1100, type: 'wave', spawns: [
+    { kind:'pod', worldOff: 0, y: MID_UP, opts:{ drop:'charge' } },
+    { kind:'pod', worldOff: 40, y: MID_DW, opts:{ drop:'speed' } },
+  ]},
+
   // ── Wave 4: Diving drones ─────────────────────────────────────────────────
   { triggerX: 1200, type: 'wave', spawns: [
     { kind:'drone', worldOff:  0, y: TOP,    opts:{pattern:'dive'} },
@@ -61,43 +73,54 @@ export const LEVEL1_EVENTS = [
     { type: 'shield',  worldOff:100, y: CENTER + 20 },
   ]},
 
-  // ── Wave 6: Armored cruiser column ────────────────────────────────────────
+  // ── Power-Up Pod: shield (mid-level reward) ─────────────────────────────
+  { triggerX: 1900, type: 'wave', spawns: [
+    { kind:'pod', worldOff: 0, y: CENTER, opts:{ drop:'shield' } },
+  ]},
+
+  // ── Wave 6: Hyper-dimensional cruiser column ──────────────────────────────
   { triggerX: 2000, type: 'wave', spawns: [
-    { kind:'cruiser', worldOff:  0, y: UPPER,  opts:{pattern:'straight'} },
-    { kind:'cruiser', worldOff: 80, y: LOWER,  opts:{pattern:'straight'} },
-    { kind:'drone',   worldOff:  0, y: CENTER, opts:{pattern:'sine'} },
-    { kind:'drone',   worldOff: 60, y: MID_UP, opts:{pattern:'sine'} },
-    { kind:'drone',   worldOff: 60, y: MID_DW, opts:{pattern:'sine'} },
+    { kind:'void_leech',   worldOff:  0, y: UPPER,  opts:{pattern:'straight'} },
+    { kind:'void_leech',   worldOff: 80, y: LOWER,  opts:{pattern:'straight'} },
+    { kind:'rift_shard',   worldOff:  0, y: CENTER, opts:{pattern:'sine'} },
+    { kind:'rift_shard',   worldOff: 60, y: MID_UP, opts:{pattern:'sine'} },
+    { kind:'rift_shard',   worldOff: 60, y: MID_DW, opts:{pattern:'sine'} },
   ]},
 
   // ── Mid-boss: Sentinel ───────────────────────────────────────────────────
   { triggerX: 2500, type: 'midboss' },
 
-  // ── Wave 7: Elite drones (post-sentinel) ─────────────────────────────────
+  // ── Power-Up Pod: special weapon ──────────────────────────────────────────
+  { triggerX: 3300, type: 'wave', spawns: [
+    { kind:'pod', worldOff: 0, y: UPPER,  opts:{ drop:'special' } },
+    { kind:'pod', worldOff: 50, y: LOWER, opts:{ drop:'life'    } },
+  ]},
+
+  // ── Wave 7: Hyper-dim elite swarm (post-sentinel) ────────────────────────
   { triggerX: 3100, type: 'wave', spawns: [
-    { kind:'drone', worldOff:  0, y: TOP,    opts:{hp:2, pattern:'sine'} },
-    { kind:'drone', worldOff: 30, y: UPPER,  opts:{hp:2, pattern:'straight'} },
-    { kind:'drone', worldOff: 30, y: LOWER,  opts:{hp:2, pattern:'straight'} },
-    { kind:'drone', worldOff:  0, y: BOT,    opts:{hp:2, pattern:'sine'} },
-    { kind:'drone', worldOff: 60, y: CENTER, opts:{hp:2, pattern:'dive'} },
-    { kind:'drone', worldOff: 90, y: MID_UP, opts:{hp:2, pattern:'dive'} },
+    { kind:'rift_shard',   worldOff:  0, y: TOP,    opts:{hp:2, pattern:'sine'} },
+    { kind:'phase_walker', worldOff: 30, y: UPPER,  opts:{hp:3, pattern:'straight'} },
+    { kind:'rift_shard',   worldOff: 30, y: LOWER,  opts:{hp:2, pattern:'straight'} },
+    { kind:'rift_shard',   worldOff:  0, y: BOT,    opts:{hp:2, pattern:'sine'} },
+    { kind:'phase_walker', worldOff: 60, y: CENTER, opts:{hp:3, pattern:'dive'} },
+    { kind:'rift_shard',   worldOff: 90, y: MID_UP, opts:{hp:2, pattern:'dive'} },
   ]},
 
-  // ── Wave 8: Frigates + drones ─────────────────────────────────────────────
+  // ── Wave 8: Phase Walkers + Rift Shards ───────────────────────────────────
   { triggerX: 3600, type: 'wave', spawns: [
-    { kind:'frigate', worldOff:  0, y: UPPER,  opts:{hp:5} },
-    { kind:'frigate', worldOff: 60, y: LOWER,  opts:{hp:5} },
-    { kind:'drone',   worldOff:  0, y: CENTER, opts:{pattern:'dive'} },
-    { kind:'drone',   worldOff: 40, y: MID_UP, opts:{pattern:'dive'} },
-    { kind:'drone',   worldOff: 40, y: MID_DW, opts:{pattern:'dive'} },
+    { kind:'phase_walker', worldOff:  0, y: UPPER,  opts:{hp:4} },
+    { kind:'phase_walker', worldOff: 60, y: LOWER,  opts:{hp:4} },
+    { kind:'rift_shard',   worldOff:  0, y: CENTER, opts:{pattern:'dive'} },
+    { kind:'rift_shard',   worldOff: 40, y: MID_UP, opts:{pattern:'dive'} },
+    { kind:'rift_shard',   worldOff: 40, y: MID_DW, opts:{pattern:'dive'} },
   ]},
 
-  // ── Wave 9: Cruiser gauntlet ──────────────────────────────────────────────
+  // ── Wave 9: Void Leech gauntlet ───────────────────────────────────────────
   { triggerX: 4100, type: 'wave', spawns: [
-    { kind:'cruiser', worldOff:  0, y: MID_UP, opts:{hp:7, pattern:'straight'} },
-    { kind:'cruiser', worldOff: 60, y: MID_DW, opts:{hp:7, pattern:'straight'} },
-    { kind:'drone',   worldOff:  0, y: TOP,    opts:{hp:2, pattern:'sine'} },
-    { kind:'drone',   worldOff:  0, y: BOT,    opts:{hp:2, pattern:'sine'} },
+    { kind:'void_leech',   worldOff:  0, y: MID_UP, opts:{hp:7, pattern:'straight'} },
+    { kind:'void_leech',   worldOff: 60, y: MID_DW, opts:{hp:7, pattern:'straight'} },
+    { kind:'rift_shard',   worldOff:  0, y: TOP,    opts:{hp:2, pattern:'sine'} },
+    { kind:'rift_shard',   worldOff:  0, y: BOT,    opts:{hp:2, pattern:'sine'} },
   ]},
 
   // ── Final power-ups before boss ────────────────────────────────────────────
@@ -107,7 +130,7 @@ export const LEVEL1_EVENTS = [
     { type: 'special', worldOff: 90, y: CENTER + 30 },
   ]},
 
-  // ── Boss: Stratocruiser Leviathan ─────────────────────────────────────────
+  // ── Boss: Rift Sovereign Dreadnought ────────────────────────────────────────
   { triggerX: 4900, type: 'boss' },
 ];
 
@@ -128,5 +151,5 @@ export function spawnMidboss() {
   return createSentinel(GAME_W + 20, GAME_H / 2);
 }
 export function spawnBoss() {
-  return createLeviathan(GAME_W + 20);
+  return createRiftSovereign(GAME_W + 20, null);
 }

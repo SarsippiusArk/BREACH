@@ -103,14 +103,14 @@ export class LevelLoader {
         this.#bossActive = true;
         const levi = spawnBoss();
         const originalTakeDamage = levi.takeDamage.bind(levi);
-        levi.takeDamage = (amount) => {
-          originalTakeDamage(amount);
+        levi.takeDamage = (amount, hitX, hitY) => {
+          originalTakeDamage(amount, hitX, hitY);
           if (!levi.alive) {
             this.#bossActive = false;
           }
         };
         this.onSpawnEntity?.(levi);
-        this.onBossAppear?.('leviathan');
+        this.onBossAppear?.('rift_sovereign');
         break;
       }
     }
