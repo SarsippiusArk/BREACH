@@ -3,6 +3,7 @@ import { SaveManager } from '../engine/SaveManager.js';
 import { drawMenuStarfield, drawBREACHLogo, menuItem, snesItem, px, panel, divider } from '../draw/drawUI.js';
 import { drawButtonIcon } from '../draw/drawControllerIcons.js';
 import { CTRL } from '../engine/ControllerProfiles.js';
+import { drawRiftAnimation } from '../draw/drawRiftAnim.js';
 
 // ── Title background ──────────────────────────────────────────────────────────
 let _titleBg = null;
@@ -166,8 +167,10 @@ export class MainMenuScene {
     // Background: rift image or animated starfield fallback
     if (_titleBg) {
       ctx.drawImage(_titleBg, 0, 0, GAME_W, GAME_H);
-      // Subtle dark vignette to keep text readable
-      ctx.fillStyle = 'rgba(0,2,18,0.45)';
+      // Animated rift overlay
+      drawRiftAnimation(ctx, this.#t);
+      // Dark vignette — lighter so animation shows through
+      ctx.fillStyle = 'rgba(0,2,18,0.35)';
       ctx.fillRect(0, 0, GAME_W, GAME_H);
     } else {
       drawMenuStarfield(ctx, this.#t);
