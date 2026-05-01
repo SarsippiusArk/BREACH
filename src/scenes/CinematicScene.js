@@ -1,6 +1,7 @@
 import { GAME_W, GAME_H, SCENES, COL } from '../constants.js';
 import { px } from '../draw/drawUI.js';
 import { drawMenuStarfield } from '../draw/drawUI.js';
+import { drawPortrait } from '../draw/drawPortraits.js';
 
 // 7-panel cinematic sequence
 const PANELS = [
@@ -22,21 +23,21 @@ const PANELS = [
   {
     speaker: 'AMY',
     color: '#5599FF',
-    portrait: (ctx, x, y) => drawPortraitAmy(ctx, x, y),
+    portrait: (ctx, x, y) => drawPortrait(ctx, 'amy',    x, y, 50, 67, '#5599FF'),
     lines: ['"Finally, something', 'interesting."'],
     drawBG: (ctx, t) => drawCockpit(ctx, '#5599FF', t),
   },
   {
     speaker: 'ROHAN',
     color: '#44CC77',
-    portrait: (ctx, x, y) => drawPortraitRohan(ctx, x, y),
+    portrait: (ctx, x, y) => drawPortrait(ctx, 'rohan',  x, y, 50, 67, '#44CC77'),
     lines: ['"Three ships vs. an entire', 'alien armada."', '"I love terrible odds."'],
     drawBG: (ctx, t) => drawCockpit(ctx, '#44CC77', t),
   },
   {
     speaker: 'AKANE',
     color: '#FF5566',
-    portrait: (ctx, x, y) => drawPortraitAkane(ctx, x, y),
+    portrait: (ctx, x, y) => drawPortrait(ctx, 'akane',  x, y, 50, 67, '#FF5566'),
     lines: ['"We will return."', '"I am certain of it."'],
     drawBG: (ctx, t) => drawCockpit(ctx, '#FF5566', t),
   },
@@ -139,8 +140,8 @@ export class CinematicScene {
       px(ctx, line, 16, lineStartY + i * 14, COL.WHITE, 5, 'left');
     });
 
-    // Portrait
-    if (panel.portrait) panel.portrait(ctx, GAME_W - 70, GAME_H - 90);
+    // Portrait — draw in lower-right of screen (top-left anchor passed in)
+    if (panel.portrait) panel.portrait(ctx, GAME_W - 72, GAME_H - 92);
 
     // Panel counter
     px(ctx, `${this.#panelIdx + 1}/${PANELS.length}`, GAME_W - 4, 4, COL.GRAY, 4, 'right');
@@ -217,29 +218,6 @@ function drawLaunch(ctx, t) {
     ctx.fillStyle='#FFFFFF'; ctx.fillRect(sx, sy, 20, 8);
     ctx.fillStyle='#FF6622'; ctx.fillRect(sx-4, sy+2, 4, 4);
   }
-}
-
-// Portrait placeholder drawers (simple pixel-art style faces)
-function drawPortraitAmy(ctx, x, y) {
-  ctx.fillStyle='#FFCC99'; ctx.beginPath(); ctx.arc(x+15, y+15, 15, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle='#FFEE88'; ctx.fillRect(x+4, y, 22, 12); // hair
-  ctx.fillStyle='#5599FF'; ctx.fillRect(x+9, y+11, 4, 3); // eyes
-  ctx.fillRect(x+18, y+11, 4, 3);
-  ctx.fillStyle='#FF8888'; ctx.fillRect(x+13, y+20, 4, 2); // mouth
-}
-function drawPortraitRohan(ctx, x, y) {
-  ctx.fillStyle='#CC8855'; ctx.beginPath(); ctx.arc(x+15, y+15, 15, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle='#221100'; ctx.fillRect(x+4, y+3, 22, 8); // dark hair
-  ctx.fillStyle='#331100'; ctx.fillRect(x+9, y+11, 4, 3); // eyes
-  ctx.fillRect(x+18, y+11, 4, 3);
-  ctx.fillStyle='#FFAAAA'; ctx.fillRect(x+12, y+20, 6, 2);
-}
-function drawPortraitAkane(ctx, x, y) {
-  ctx.fillStyle='#FFD4AA'; ctx.beginPath(); ctx.arc(x+15, y+15, 15, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle='#110011'; ctx.fillRect(x+4, y, 22, 16); // dark hair
-  ctx.fillStyle='#FF5566'; ctx.fillRect(x+9, y+11, 4, 3); // eyes (red)
-  ctx.fillRect(x+18, y+11, 4, 3);
-  ctx.fillStyle='#FFBBBB'; ctx.fillRect(x+13, y+20, 4, 2);
 }
 
 function dividerLine(ctx, y, color) {

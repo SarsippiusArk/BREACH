@@ -1,9 +1,7 @@
-import { GAME_W, GAME_H, SCENES, COL, STARTER_PILOTS, PILOT_DATA } from '../constants.js';
+import { GAME_W, GAME_H, SCENES, COL, PILOT_DATA } from '../constants.js';
 import { SaveManager } from '../engine/SaveManager.js';
 import { px, panel, drawMenuStarfield, statBar, divider } from '../draw/drawUI.js';
-import { drawAmyShip, drawRohanShip, drawAkaneShip, drawShaneShip, drawFaradayShip, drawLiminaeShip, SHIP_W, SHIP_H } from '../draw/drawSprites.js';
-
-const DRAW_FNS = { amy: drawAmyShip, rohan: drawRohanShip, akane: drawAkaneShip, shane: drawShaneShip, faraday: drawFaradayShip, liminae: drawLiminaeShip };
+import { drawPortrait } from '../draw/drawPortraits.js';
 const ALL_PILOTS = ['amy','rohan','akane','shane','faraday','liminae'];
 const STAT_LABELS = ['SPD','RNG','ARM','SPC'];
 const STAT_KEYS   = ['speed','fireRate','armor','special'];
@@ -130,56 +128,62 @@ export class CharacterSelectScene {
   }
 
   #drawSection(ctx, pi, cx, pilots) {
-    const idx = this.#cursor[pi];
+    const idx     = this.#cursor[pi];
     const pilotId = pilots[idx];
-    const data = PILOT_DATA[pilotId];
-    const pal = this.#palette?.[pilotId];
-    const ready = this.#ready[pi];
+    const data    = PILOT_DATA[pilotId];
+    const pal     = this.#palette?.[pilotId];
+    const ready   = this.#ready[pi];
+    const locked  = data?.locked;
+    const color   = data?.color ?? COL.ACCENT;
 
-    // Player label
+    // ── Player label ──────────────────────────────────────────────────────
     px(ctx, `P${pi+1}`, cx, 26, pi === 0 ? '#5599FF' : '#FF8844', 7, 'center');
 
-    // Ship preview (large, centered)
-    const shipScale = 5;
-    const shipW = SHIP_W * shipScale, shipH = SHIP_H * shipScale;
-    const sx = cx - shipW / 2, sy = 50;
-    ctx.save();
-    ctx.scale(shipScale, shipScale);
-    const drawFn = DRAW_FNS[pilotId] || drawAmyShip;
-    drawFn(ctx, (cx - shipW/2) / shipScale, sy / shipScale, pal ? Object.values(pal) : null);
-    ctx.restore();
+    // ── Portrait card (57×76 — exact 3:4 ratio from 810×1080 source) ─────
+    const PW = 57, PH = 76;
+    const portX = Math.round(cx - PW / 2);
+    const portY = 32;
+    drawPortrait(ctx, pilotId, portX, portY, PW, PH, color, locked);
 
-    // Pilot name
-    const locked = data?.locked;
+    // Reference Y: everything below anchors to portrait bottom
+    const refY = portY + PH;  // = 108
+
+    // ── Navigation arrows (vertically centred on portrait) ────────────────
+    if (!ready) {
+      const arrowY = portY + Math.round(PH / 2);
+      px(ctx, '<', cx - 46, arrowY, COL.ACCENT, 8, 'center');
+      px(ctx, '>', cx + 46, arrowY, COL.ACCENT, 8, 'center');
+    }
+
+    // ── Pilot name ────────────────────────────────────────────────────────
     px(ctx, locked ? '?????' : (data?.name ?? pilotId.toUpperCase()),
-       cx, sy + shipH + 8, locked ? COL.GRAY : data?.color ?? COL.WHITE, 6, 'center');
+       cx, refY + 8, locked ? COL.GRAY : color, 6, 'center');
 
-    if (!locked) {
-      // Bio lines
+    if (locked) {
+      // Show unlock hint for locked pilots
+      const hint = data?.unlockHint ?? '';
+      px(ctx, hint, cx, refY + 22, COL.GRAY, 4, 'center');
+    } else {
+      // Bio lines (3 × 10 px)
       const bio = data?.bio ?? [];
-      bio.forEach((line, i) => px(ctx, line, cx, sy + shipH + 22 + i*10, COL.GRAY, 4, 'center'));
+      bio.forEach((line, i) => px(ctx, line, cx, refY + 22 + i * 10, COL.GRAY, 4, 'center'));
 
-      // Stats
-      const statsY = sy + shipH + 65;
-      const statW = 44;
-      const stats = data?.stats ?? {};
+      // Stat bars (4 × 12 px)
+      const statsY = refY + 22 + bio.length * 10 + 8;
+      const statW  = 50;
+      const stats  = data?.stats ?? {};
       STAT_LABELS.forEach((label, i) => {
         const key = STAT_KEYS[i];
         const val = stats[key] ?? 3;
-        px(ctx, label, cx - statW/2, statsY + i*12, COL.GRAY, 4, 'left');
-        statBar(ctx, cx - statW/2 + 18, statsY + i*12 + 1, statW, 6, val/5, data?.color ?? COL.ACCENT);
+        px(ctx, label, cx - statW / 2, statsY + i * 12, COL.GRAY, 4, 'left');
+        statBar(ctx, cx - statW / 2 + 20, statsY + i * 12 + 1, statW - 2, 6, val / 5, color);
       });
     }
 
-    // Pilot arrows
-    if (!ready) {
-      px(ctx, '<', cx - 50, sy + shipH/2 + 12, COL.ACCENT, 8, 'center');
-      px(ctx, '>', cx + 50, sy + shipH/2 + 12, COL.ACCENT, 8, 'center');
-    }
-
-    // Ready indicator
+    // ── Ready indicator ───────────────────────────────────────────────────
     if (ready) {
-      ctx.fillStyle = 'rgba(0,180,80,0.18)'; ctx.fillRect(cx-60, 40, 120, GAME_H - 60);
+      ctx.fillStyle = 'rgba(0,180,80,0.18)';
+      ctx.fillRect(cx - 60, 40, 120, GAME_H - 60);
       px(ctx, 'READY!', cx, GAME_H * 0.72, COL.GREEN, 8, 'center');
     }
   }
