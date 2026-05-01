@@ -18,7 +18,8 @@ let _logoCanvas = null;
   const img = new Image();
   img.onload = () => {
     // Crop away the large white margins around the text
-    const CX = 70, CY = 78;
+    // New logo: 1080x607, white bg, text centred with ~65px L/R and ~105px T/B padding
+    const CX = 55, CY = 100;
     const CW = img.naturalWidth  - CX * 2;
     const CH = img.naturalHeight - CY * 2;
     const oc = document.createElement('canvas');
@@ -29,11 +30,12 @@ let _logoCanvas = null;
     const id = octx.getImageData(0, 0, CW, CH);
     const d  = id.data;
     for (let i = 0; i < d.length; i += 4) {
+      // Soft-edge the white removal so the cyan glow fades naturally
       const mn = Math.min(d[i], d[i+1], d[i+2]);
-      if (mn > 252) {
+      if (mn > 248) {
         d[i+3] = 0;
-      } else if (mn > 230) {
-        d[i+3] = Math.round(255 * (1 - (mn - 230) / 22));
+      } else if (mn > 210) {
+        d[i+3] = Math.round(255 * (1 - (mn - 210) / 38));
       }
     }
     octx.putImageData(id, 0, 0);
@@ -138,10 +140,10 @@ export class MainMenuScene {
 
     // Logo — image version with white stripped, fallback to drawn text
     if (_logoCanvas) {
-      const LW = 260;
+      const LW = 310;
       const LH = Math.round(_logoCanvas.height * (LW / _logoCanvas.width));
       const LX = Math.round(GAME_W / 2 - LW / 2);
-      const LY = 4;
+      const LY = 2;
       ctx.drawImage(_logoCanvas, LX, LY, LW, LH);
     } else {
       ctx.save();
@@ -150,10 +152,10 @@ export class MainMenuScene {
       ctx.restore();
     }
 
-    divider(ctx, GAME_H * 0.50);
+    divider(ctx, GAME_H * 0.53);
 
     // Menu items
-    const startY = GAME_H * 0.55;
+    const startY = GAME_H * 0.57;
     const hasSave = SaveManager.hasSave();
     this.#items.forEach((item, i) => {
       const y = startY + i * 22;
