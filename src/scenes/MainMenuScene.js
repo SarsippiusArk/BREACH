@@ -20,6 +20,13 @@ let _protocultureReady = false;
   face.load().then(f => { document.fonts.add(f); _protocultureReady = true; }).catch(() => {});
 }());
 
+// ── Optimus font loader (subtitle) ───────────────────────────────────────────
+let _optimusReady = false;
+(function () {
+  const face = new FontFace('Optimus', 'url(./assets/Optimus.ttf)');
+  face.load().then(f => { document.fonts.add(f); _optimusReady = true; }).catch(() => {});
+}());
+
 function _drawProtocultureLogo(ctx) {
   ctx.save();
   ctx.textAlign = 'center';
@@ -65,10 +72,11 @@ function _drawProtocultureLogo(ctx) {
   ctx.fillText('BREACH', cx, ty);
   ctx.restore();
 
-  // Subtitle — INFILTRATE THE RIFT
-  const subFs = Math.max(10, Math.round(fs * 0.21));
-  const subY  = ty + subFs + 5;
-  ctx.font = `${subFs}px Protoculture`;
+  // Subtitle — INFILTRATE THE RIFT (Optimus font, fallback to Protoculture)
+  const subFam  = _optimusReady ? 'Optimus' : 'Protoculture';
+  const subFs   = Math.max(10, Math.round(fs * 0.21));
+  const subY    = ty + subFs + 5;
+  ctx.font        = `${subFs}px ${subFam}, monospace`;
   ctx.shadowColor = '#00CCFF';
   ctx.shadowBlur  = 5;
   const sg = ctx.createLinearGradient(cx, subY - subFs, cx, subY);
