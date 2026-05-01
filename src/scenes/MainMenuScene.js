@@ -1,6 +1,6 @@
 import { GAME_W, GAME_H, SCENES, COL } from '../constants.js';
 import { SaveManager } from '../engine/SaveManager.js';
-import { drawMenuStarfield, drawBREACHLogo, menuItem, px, panel, divider } from '../draw/drawUI.js';
+import { drawMenuStarfield, drawBREACHLogo, menuItem, snesItem, px, panel, divider } from '../draw/drawUI.js';
 import { drawButtonIcon } from '../draw/drawControllerIcons.js';
 import { CTRL } from '../engine/ControllerProfiles.js';
 
@@ -183,22 +183,23 @@ export class MainMenuScene {
       ctx.restore();
     }
 
-    divider(ctx, GAME_H * 0.53);
-
-    // Menu items
-    const startY = GAME_H * 0.57;
+    // Menu items — right-aligned with SNES Italic
+    const MENU_X  = GAME_W - 14;   // right-edge anchor
+    const startY  = Math.round(GAME_H * 0.51);
+    const ROW_H   = 21;
     const hasSave = SaveManager.hasSave();
     this.#items.forEach((item, i) => {
-      const y = startY + i * 22;
+      const y          = startY + i * ROW_H;
       const isDisabled = item === 'CONTINUE' && !hasSave;
-      const color = isDisabled ? COL.GRAY : (i === this.#sel ? COL.WHITE : '#7799BB');
-      menuItem(ctx, item, GAME_W / 2, y, i === this.#sel && !isDisabled, 7, color);
+      const color      = isDisabled ? COL.GRAY : '#7799BB';
+      snesItem(ctx, item, MENU_X, y, i === this.#sel && !isDisabled, 11, color);
     });
 
-    // Hold hint for NG+
+    // Hold hint for NG+ — aligned to right
     if (!this.#ngplusVisible && this.#items[this.#sel] === 'EXTRAS') {
       const barW = Math.min(this.#extrasHoldTime / 2, 1) * 60;
-      ctx.fillStyle = COL.ACCENT; ctx.fillRect(GAME_W / 2 - 30, GAME_H * 0.88, barW, 2);
+      ctx.fillStyle = COL.ACCENT;
+      ctx.fillRect(MENU_X - 60, GAME_H * 0.88, barW, 2);
     }
 
     divider(ctx, GAME_H * 0.86);

@@ -8,6 +8,43 @@ export function px(ctx, text, x, y, color = COL.WHITE, size = 6, align = 'left',
   ctx.fillText(text, x, y);
 }
 
+// ── SNES Italic font loader ───────────────────────────────────────────────────
+let _snesReady = false;
+(function () {
+  const face = new FontFace('SNESItalic', 'url(./assets/SNES-Italic.ttf)');
+  face.load().then(f => { document.fonts.add(f); _snesReady = true; }).catch(() => {});
+}());
+
+/**
+ * Right-aligned menu item using SNES Italic.
+ * x = right edge anchor; text flows leftward from there.
+ */
+export function snesItem(ctx, text, x, y, selected, size = 11, color = COL.WHITE) {
+  const fam = _snesReady ? 'SNESItalic' : '"Press Start 2P"';
+  ctx.font = `${size}px ${fam}, monospace`;
+  ctx.textAlign    = 'right';
+  ctx.textBaseline = 'top';
+
+  if (selected) {
+    const tw = ctx.measureText(text).width;
+    // Highlight bar spanning text + small margin
+    ctx.fillStyle = 'rgba(0,160,255,0.13)';
+    ctx.fillRect(x - tw - 14, y - 4, tw + 18, size + 10);
+    // Left-edge cyan accent rule
+    ctx.fillStyle = COL.ACCENT;
+    ctx.fillRect(x - tw - 14, y - 4, 2, size + 10);
+    // Neon glow + yellow text
+    ctx.shadowColor = '#00EEFF';
+    ctx.shadowBlur  = 9;
+    ctx.fillStyle   = COL.YELLOW;
+    ctx.fillText(text, x, y);
+    ctx.shadowBlur  = 0;
+  } else {
+    ctx.fillStyle = color;
+    ctx.fillText(text, x, y);
+  }
+}
+
 /** Semi-transparent dark panel */
 export function panel(ctx, x, y, w, h, alpha = 0.85, border = true) {
   ctx.fillStyle = `rgba(5,12,38,${alpha})`;
@@ -46,7 +83,7 @@ export function drawMenuStarfield(ctx, scrollT) {
   ctx.globalAlpha = 1;
 }
 
-/** Menu item (highlighted or normal) */
+/** Menu item (highlighted or normal) — centred, Press Start 2P */
 export function menuItem(ctx, text, x, y, selected, size = 7, color = COL.WHITE) {
   if (selected) {
     ctx.fillStyle = 'rgba(34,100,255,0.18)';
