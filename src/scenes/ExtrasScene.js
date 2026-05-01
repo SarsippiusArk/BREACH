@@ -112,44 +112,44 @@ export class ExtrasScene {
       this.#drawJukeboxTab(ctx);
       return;
     }
-    snesText(ctx, 'EXTRAS', GAME_W/2, 6, COL.YELLOW, 10, 'center');
-    divider(ctx, 24);
+    snesText(ctx, 'EXTRAS', GAME_W/2, 6, COL.YELLOW, 30, 'center');
+    divider(ctx, 46);
 
     // Pilot tabs + Jukebox tab
     PILOTS.forEach((pid, i) => {
-      const tx = 50 + i * 100, ty = 30;
+      const tx = 50 + i * 100, ty = 54;
       const sel = i === this.#pilotIdx && this.#tab === 'palette';
-      snesText(ctx, PILOT_DATA[pid]?.name ?? pid, tx, ty, sel ? COL.YELLOW : COL.GRAY, 7, 'center');
-      if (sel) { ctx.fillStyle = COL.ACCENT; ctx.fillRect(tx - 20, ty + 10, 40, 1); }
+      snesText(ctx, PILOT_DATA[pid]?.name ?? pid, tx, ty, sel ? COL.YELLOW : COL.GRAY, 18, 'center');
+      if (sel) { ctx.fillStyle = COL.ACCENT; ctx.fillRect(tx - 24, ty + 22, 48, 1); }
     });
     // Jukebox tab
     const jbSel = this.#tab === 'jukebox';
     const jbX = 50 + PILOTS.length * 100;
-    drawMusicNote(ctx, jbX - 8, 21, jbSel ? this.#t : 0);
-    snesText(ctx, 'JUKEBOX', jbX + 6, 30, jbSel ? COL.YELLOW : COL.GRAY, 7, 'left');
-    if (jbSel) { ctx.fillStyle = COL.ACCENT; ctx.fillRect(jbX - 8, 40, 60, 1); }
+    drawMusicNote(ctx, jbX - 8, 48, jbSel ? this.#t : 0);
+    snesText(ctx, 'JUKEBOX', jbX + 6, 54, jbSel ? COL.YELLOW : COL.GRAY, 18, 'left');
+    if (jbSel) { ctx.fillStyle = COL.ACCENT; ctx.fillRect(jbX - 8, 76, 72, 1); }
 
     const pid = this.#currentPilot();
     const data = PILOT_DATA[pid];
     const pal = this.#currentPalette(pid);
 
-    // Large ship preview
-    const SCALE = 6;
+    // Ship preview at 4× scale (leaves room for large text above and slots below)
+    const SCALE = 4;
     ctx.save();
     ctx.scale(SCALE, SCALE);
     const sx = (GAME_W/2 - SHIP_W*SCALE/2) / SCALE;
-    const sy = (GAME_H * 0.30) / SCALE;
+    const sy = 30;   // scaled units → ship visual starts ~y=88
     const drawFn = DRAW_FNS[pid];
     if (drawFn) drawFn(ctx, sx, sy, pal);
     ctx.restore();
 
     // Color slot selector
-    const slotStartY = GAME_H * 0.60;
+    const slotStartY = Math.round(GAME_H * 0.67);
     SLOT_LABELS.forEach((label, si) => {
-      const y = slotStartY + si * 26;
+      const y = slotStartY + si * 23;
       const sel = si === this.#slotIdx;
-      if (sel) { px(ctx, '>', GAME_W/2 - 90, y + 2, COL.ACCENT, 5); }
-      snesText(ctx, label, GAME_W/2 - 80, y - 1, sel ? COL.YELLOW : COL.GRAY, 8, 'left');
+      if (sel) { px(ctx, '>', GAME_W/2 - 94, y + 5, COL.ACCENT, 6); }
+      snesText(ctx, label, GAME_W/2 - 82, y, sel ? COL.YELLOW : COL.GRAY, 21, 'left');
       // Color swatch row
       PALETTE_OPTIONS[si].forEach((c, ci) => {
         const cx = GAME_W/2 - 10 + ci * 14, cy = y;
@@ -167,22 +167,22 @@ export class ExtrasScene {
 
   #drawJukeboxTab(ctx) {
     const found = SaveManager.getJukebox().collectedNotes.length;
-    snesText(ctx, 'EXTRAS', GAME_W/2, 6, COL.YELLOW, 10, 'center');
-    divider(ctx, 24);
-    // Tabs row (same as palette tab)
+    snesText(ctx, 'EXTRAS', GAME_W/2, 6, COL.YELLOW, 30, 'center');
+    divider(ctx, 46);
+    // Tabs row
     PILOTS.forEach((pid, i) => {
-      const tx = 50 + i * 100, ty = 30;
-      snesText(ctx, PILOT_DATA[pid]?.name ?? pid, tx, ty, COL.GRAY, 7, 'center');
+      const tx = 50 + i * 100, ty = 54;
+      snesText(ctx, PILOT_DATA[pid]?.name ?? pid, tx, ty, COL.GRAY, 18, 'center');
     });
     const jbX = 50 + PILOTS.length * 100;
-    drawMusicNote(ctx, jbX - 8, 21, this.#t);
-    snesText(ctx, 'JUKEBOX', jbX + 6, 30, COL.YELLOW, 7, 'left');
-    ctx.fillStyle = COL.ACCENT; ctx.fillRect(jbX - 8, 40, 60, 1);
-    divider(ctx, 48);
+    drawMusicNote(ctx, jbX - 8, 48, this.#t);
+    snesText(ctx, 'JUKEBOX', jbX + 6, 54, COL.YELLOW, 18, 'left');
+    ctx.fillStyle = COL.ACCENT; ctx.fillRect(jbX - 8, 76, 72, 1);
+    divider(ctx, 84);
     // Jukebox summary
-    const noteY = GAME_H / 2 - 20;
-    drawMusicNote(ctx, GAME_W / 2 - 36, noteY, this.#t);
-    snesText(ctx, `${found} / 5 NOTES FOUND`, GAME_W / 2 - 14, noteY + 2, found > 0 ? COL.YELLOW : COL.GRAY, 8, 'left');
+    const noteY = GAME_H / 2 - 14;
+    drawMusicNote(ctx, GAME_W / 2 - 40, noteY, this.#t);
+    snesText(ctx, `${found} / 5 NOTES FOUND`, GAME_W / 2 - 16, noteY, found > 0 ? COL.YELLOW : COL.GRAY, 21, 'left');
     px(ctx, 'Find hidden musical notes in the levels', GAME_W / 2, noteY + 26, COL.GRAY, 4, 'center');
     px(ctx, 'to unlock tracks in the Jukebox.', GAME_W / 2, noteY + 38, COL.GRAY, 4, 'center');
     divider(ctx, GAME_H - 22);

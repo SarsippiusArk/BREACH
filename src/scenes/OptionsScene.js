@@ -47,30 +47,30 @@ export class OptionsScene {
 
   draw(ctx) {
     drawMenuStarfield(ctx, this.#t);
-    snesText(ctx, 'OPTIONS', GAME_W/2, 12, COL.YELLOW, 10, 'center');
-    divider(ctx, 34);
+    snesText(ctx, 'OPTIONS', GAME_W/2, 6, COL.YELLOW, 30, 'center');
+    divider(ctx, 46);
 
     const items = [
-      { label: 'MUSIC VOL',   val: this.#musicVol },
-      { label: 'SFX VOL',     val: this.#sfxVol   },
-      { label: 'KEY BINDINGS', val: null           },
-      { label: 'BACK',         val: null           },
+      { label: 'MUSIC VOL',    val: this.#musicVol },
+      { label: 'SFX VOL',      val: this.#sfxVol   },
+      { label: 'KEY BINDINGS', val: null            },
+      { label: 'BACK',         val: null            },
     ];
     items.forEach(({ label, val }, i) => {
-      const y = 46 + i * 36;
+      const y = 58 + i * 50;
       const sel = i === this.#sel;
-      if (sel) { px(ctx, '>', GAME_W/2 - 96, y + 4, COL.ACCENT, 6); }
-      snesText(ctx, label, GAME_W/2 - 84, y, sel ? COL.YELLOW : COL.WHITE, 9);
+      if (sel) { px(ctx, '>', GAME_W/2 - 102, y + 7, COL.ACCENT, 8); }
+      snesText(ctx, label, GAME_W/2 - 88, y, sel ? COL.YELLOW : COL.WHITE, 27);
       if (val !== null) {
-        statBar(ctx, GAME_W/2 + 10, y + 5, 80, 8, val, COL.ACCENT);
-        px(ctx, `${Math.round(val*100)}%`, GAME_W/2 + 96, y + 2, COL.WHITE, 5, 'right');
+        statBar(ctx, GAME_W/2 - 88, y + 32, 168, 10, val, COL.ACCENT);
+        px(ctx, `${Math.round(val*100)}%`, GAME_W/2 + 84, y + 32, COL.WHITE, 5, 'right');
         if (sel) {
-          px(ctx, '< >', GAME_W/2 + 10, y + 18, COL.GRAY, 4, 'left');
+          px(ctx, '< >', GAME_W/2 - 88, y + 46, COL.GRAY, 4, 'left');
         }
       }
     });
 
-    divider(ctx, GAME_H - 22);
+    divider(ctx, GAME_H - 24);
     px(ctx, 'LEFT/RIGHT: ADJUST   ENTER: SELECT   ESC: BACK', GAME_W/2, GAME_H - 16, COL.GRAY, 4, 'center');
   }
 }
