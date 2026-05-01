@@ -4,21 +4,12 @@ import { loadAtlas, atlasFrame } from '../engine/AtlasLoader.js';
 export const SHIP_W = 24;
 export const SHIP_H = 12;
 
-// ── Amy sprite sheet (Gradius III, Konami 1991 — credit to Konami) ───────────
-// Sheet: 206×265, RGB, bg color (215,215,206), frames in row 1 at y=14–29
-const AMY_BG   = [215, 215, 206];
-const AMY_BG_TOL = 22;
-const AMY_FRAMES_SRC = [
-  { sx: 19, sy: 14, sw: 31, sh: 16 },
-  { sx: 54, sy: 14, sw: 31, sh: 16 },
-  { sx: 89, sy: 14, sw: 31, sh: 16 },
-  { sx:124, sy: 14, sw: 31, sh: 16 },
-  { sx:159, sy: 14, sw: 31, sh: 16 },
-];
-const _amyFrameCache  = []; // pre-keyed + scaled display canvases
-let   _amyHorizCache  = null; // horizontal-movement sprite (single frame)
-const _amyUpBankCache = []; // 2-frame upward-banking animation
-const _amyDnBankCache = []; // 2-frame downward-banking animation
+// ── Amy sprites — chroma-key colour: RGB(128,255,128) lime green ────────────
+const AMY_BG     = [128, 255, 128];
+const AMY_BG_TOL = 20;                 // tight tolerance — pure #80FF80 bg
+let   _amyHorizCache  = null;          // horizontal flight sprite (single frame)
+const _amyUpBankCache = [];            // 2-frame upward-banking animation
+const _amyDnBankCache = [];            // 2-frame downward-banking animation
 
 (async function () {
   const img = await new Promise(res => {
@@ -94,66 +85,17 @@ const _amyDnBankCache = []; // 2-frame downward-banking animation
   }
 }());
 
-(async function () {
-  const img = await new Promise(res => {
-    const i = new Image();
-    i.onload = () => res(i);
-    i.onerror = () => res(null);
-    i.src = './assets/amy_gradius_sheet.png';
-  });
-  if (!img) return;
-  const DW = 56, DH = 29;
-  for (const f of AMY_FRAMES_SRC) {
-    // Extract raw frame
-    const tmp = Object.assign(document.createElement('canvas'), { width: f.sw, height: f.sh });
-    const tc = tmp.getContext('2d');
-    tc.drawImage(img, f.sx, f.sy, f.sw, f.sh, 0, 0, f.sw, f.sh);
-    // Key out background → alpha=0
-    const id = tc.getImageData(0, 0, f.sw, f.sh);
-    const d = id.data;
-    for (let i = 0; i < d.length; i += 4) {
-      if (Math.abs(d[i]   - AMY_BG[0])
-        + Math.abs(d[i+1] - AMY_BG[1])
-        + Math.abs(d[i+2] - AMY_BG[2]) <= AMY_BG_TOL) d[i+3] = 0;
-    }
-    tc.putImageData(id, 0, 0);
-    // Scale to display size (nearest-neighbour — keep pixel art crisp)
-    const oc = Object.assign(document.createElement('canvas'), { width: DW, height: DH });
-    const c2d = oc.getContext('2d');
-    c2d.imageSmoothingEnabled = false;
-    c2d.drawImage(tmp, 0, 0, f.sw, f.sh, 0, 0, DW, DH);
-    _amyFrameCache.push(oc);
-  }
-}());
+// ── Player Ships ──────────────────────────────────────────────────────────────
 
-// ── TurboGrafx-16 jewel-tone palette — 3-bit per channel (0x00/24/49/6D/92/B6/DB/FF)
-// Player Ships ─────────────────────────────────────────────────────────────────
-
-/** Amy: Gradius III ship sprite (Konami 1991) — bg-keyed, pixel art 2× scaled
- *  @param {number} bankDir  -1 = left, 0 = none, 1 = right
- *  @param {number} upPhase  0–2 float: 0=neutral, 1=slight bank, 2=full bank up
+/** Amy: pilot sprite — chroma-keyed, pixel art 2× scaled.
+ *  Priority: up-bank > down-bank > horizontal (base sprite, never flipped).
+ *  bankDir is kept for API compatibility but no longer controls flipping.
  */
 export function drawAmyShip(ctx, x, y, pal, invincible, bankDir = 0, upPhase = 0) {
   if (invincible && Math.floor(Date.now() / 80) % 2) return;
   x = Math.round(x); y = Math.round(y);
 
-  // ── Horizontal-movement sprite (highest priority) ─────────────────────────
-  if (bankDir !== 0 && _amyHorizCache) {
-    const DW = 52, DH = 36;
-    const ox = x + Math.round(SHIP_W / 2 - DW / 2);
-    const oy = y + Math.round(SHIP_H / 2 - DH / 2);
-    if (bankDir < 0) {
-      ctx.save();
-      ctx.translate(ox + DW, oy); ctx.scale(-1, 1);
-      ctx.drawImage(_amyHorizCache, 0, 0, DW, DH, 0, 0, DW, DH);
-      ctx.restore();
-    } else {
-      ctx.drawImage(_amyHorizCache, 0, 0, DW, DH, ox, oy, DW, DH);
-    }
-    return;
-  }
-
-  // ── Upward-banking animation ──────────────────────────────────────────
+  // ── Upward-banking (highest priority while banking up) ────────────────────
   if (upPhase > 0.1 && _amyUpBankCache.length === 2) {
     const fi = upPhase >= 1.5 ? 1 : 0;
     const DW = 52, DH = 40;
@@ -163,7 +105,7 @@ export function drawAmyShip(ctx, x, y, pal, invincible, bankDir = 0, upPhase = 0
     return;
   }
 
-  // ── Downward-banking animation ─────────────────────────────────────────────
+  // ── Downward-banking ──────────────────────────────────────────────────────
   if (upPhase < -0.1 && _amyDnBankCache.length === 2) {
     const fi = upPhase <= -1.5 ? 1 : 0;
     const DW = 54, DH = 34;
@@ -173,16 +115,16 @@ export function drawAmyShip(ctx, x, y, pal, invincible, bankDir = 0, upPhase = 0
     return;
   }
 
-  if (_amyFrameCache.length > 0) {
-    const fi = Math.floor(Date.now() / 150) % _amyFrameCache.length;
-    const DW = 56, DH = 29;
-    const dx = x + Math.round(SHIP_W / 2 - DW / 2);
-    const dy = y + Math.round(SHIP_H / 2 - DH / 2);
-    ctx.drawImage(_amyFrameCache[fi], 0, 0, DW, DH, dx, dy, DW, DH);
+  // ── Horizontal flight sprite (default for all movement + neutral — never flipped) ─
+  if (_amyHorizCache) {
+    const DW = 52, DH = 36;
+    const ox = x + Math.round(SHIP_W / 2 - DW / 2);
+    const oy = y + Math.round(SHIP_H / 2 - DH / 2);
+    ctx.drawImage(_amyHorizCache, 0, 0, DW, DH, ox, oy, DW, DH);
     return;
   }
 
-  // ── Procedural fallback (used while image loads) ───────────────────────────
+  // ── Procedural fallback (while images load) ───────────────────────────────
   const [m, li, ck, en] = pal || ['#0049DB','#00B6FF','#00DBFF','#FF9200'];
   const eg = Math.floor(Date.now() / 120) % 2 ? '#FFFF00' : '#FFB600';
   // Engine exhaust — animated hot core

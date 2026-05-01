@@ -24,7 +24,7 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
   const startY = playerIdx === 0 ? GAME_H * 0.5 - SHIP_H / 2 : GAME_H * 0.35 - SHIP_H / 2;
 
   const player = {
-    type: 'player', pilotId, playerIdx, alive: true,
+    type: 'player', pilotId, playerIdx, alive: true, respawning: false,
     x: startX, y: startY, w: SHIP_W, h: SHIP_H,
 
     // Weapon system reference
@@ -56,7 +56,7 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
     onPowerUpCollect() { this.ws.onPowerUpCollect(this); },
 
     update(delta, input, camera, entities) {
-      if (!this.alive) return;
+      if (!this.alive || this.respawning) return;
       const pi = this.playerIdx;
 
       // Weapon-system frame update (timers, bell spawning, force tracking, etc.)
@@ -131,21 +131,24 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
     die() {
       this.lives--;
       if (this.lives > 0) {
+        // Use respawning flag so the entity stays in the EntityManager's list
+        // (alive stays true — setting alive=false causes pruning and permanent disappearance)
+        this.respawning = true;
+        this.invincibleTimer = 999; // block damage during the respawn window
         setTimeout(() => {
-          this.x = 60;
-          this.y = this.playerIdx === 0 ? GAME_H * 0.5 - SHIP_H / 2 : GAME_H * 0.35 - SHIP_H / 2;
+          this.x = startX;
+          this.y = startY;
           this.hp = this.maxHp;
-          this.invincibleTimer = 3.0;
-          this.alive = true;
+          this.invincibleTimer = 3.0; // post-spawn flashing invincibility
+          this.respawning = false;
         }, 1800);
-        this.alive = false;
       } else {
-        this.alive = false;
+        this.alive = false;           // truly dead — no lives left
       }
     },
 
     draw(ctx) {
-      if (!this.alive) return;
+      if (!this.alive || this.respawning) return;
       const inv    = this.invincibleTimer > 0;
       const drawFn = DRAW_FNS[this.pilotId] ?? drawAmyShip;
 
