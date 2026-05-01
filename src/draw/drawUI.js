@@ -45,6 +45,16 @@ export function snesItem(ctx, text, x, y, selected, size = 11, color = COL.WHITE
   }
 }
 
+/** General text rendered in SNES Italic — drop-in replacement for px() */
+export function snesText(ctx, text, x, y, color = COL.WHITE, size = 7, align = 'left', baseline = 'top') {
+  const fam = _snesReady ? 'SNESItalic' : '"Press Start 2P"';
+  ctx.font         = `${size}px ${fam}, monospace`;
+  ctx.fillStyle    = color;
+  ctx.textAlign    = align;
+  ctx.textBaseline = baseline;
+  ctx.fillText(text, x, y);
+}
+
 /** Semi-transparent dark panel */
 export function panel(ctx, x, y, w, h, alpha = 0.85, border = true) {
   ctx.fillStyle = `rgba(5,12,38,${alpha})`;

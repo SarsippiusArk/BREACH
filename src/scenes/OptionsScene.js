@@ -1,6 +1,6 @@
 import { GAME_W, GAME_H, SCENES, COL } from '../constants.js';
 import { SaveManager } from '../engine/SaveManager.js';
-import { px, panel, drawMenuStarfield, divider, statBar } from '../draw/drawUI.js';
+import { px, panel, drawMenuStarfield, divider, statBar, snesText } from '../draw/drawUI.js';
 
 export class OptionsScene {
   #state; #audio; #returnTo;
@@ -47,7 +47,7 @@ export class OptionsScene {
 
   draw(ctx) {
     drawMenuStarfield(ctx, this.#t);
-    px(ctx, 'OPTIONS', GAME_W/2, 16, COL.YELLOW, 8, 'center');
+    snesText(ctx, 'OPTIONS', GAME_W/2, 12, COL.YELLOW, 10, 'center');
     divider(ctx, 34);
 
     const items = [
@@ -57,15 +57,15 @@ export class OptionsScene {
       { label: 'BACK',         val: null           },
     ];
     items.forEach(({ label, val }, i) => {
-      const y = 46 + i * 34;
+      const y = 46 + i * 36;
       const sel = i === this.#sel;
-      if (sel) { px(ctx, '>', GAME_W/2 - 96, y + 2, COL.ACCENT, 6); }
-      px(ctx, label, GAME_W/2 - 84, y + 2, sel ? COL.YELLOW : COL.WHITE, 6);
+      if (sel) { px(ctx, '>', GAME_W/2 - 96, y + 4, COL.ACCENT, 6); }
+      snesText(ctx, label, GAME_W/2 - 84, y, sel ? COL.YELLOW : COL.WHITE, 9);
       if (val !== null) {
         statBar(ctx, GAME_W/2 + 10, y + 5, 80, 8, val, COL.ACCENT);
         px(ctx, `${Math.round(val*100)}%`, GAME_W/2 + 96, y + 2, COL.WHITE, 5, 'right');
         if (sel) {
-          px(ctx, '< >', GAME_W/2 + 10, y + 16, COL.GRAY, 4, 'left');
+          px(ctx, '< >', GAME_W/2 + 10, y + 18, COL.GRAY, 4, 'left');
         }
       }
     });

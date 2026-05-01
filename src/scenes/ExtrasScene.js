@@ -1,6 +1,6 @@
 import { GAME_W, GAME_H, SCENES, COL, PILOT_DATA } from '../constants.js';
 import { SaveManager } from '../engine/SaveManager.js';
-import { px, panel, drawMenuStarfield, divider } from '../draw/drawUI.js';
+import { px, panel, drawMenuStarfield, divider, snesText } from '../draw/drawUI.js';
 import { drawAmyShip, drawRohanShip, drawAkaneShip, SHIP_W, SHIP_H } from '../draw/drawSprites.js';
 import { drawMusicNote } from '../draw/drawSprites.js';
 
@@ -112,21 +112,21 @@ export class ExtrasScene {
       this.#drawJukeboxTab(ctx);
       return;
     }
-    px(ctx, 'EXTRAS - SHIP COLORS', GAME_W/2, 8, COL.YELLOW, 6, 'center');
+    snesText(ctx, 'EXTRAS', GAME_W/2, 6, COL.YELLOW, 10, 'center');
     divider(ctx, 24);
 
     // Pilot tabs + Jukebox tab
     PILOTS.forEach((pid, i) => {
       const tx = 50 + i * 100, ty = 30;
       const sel = i === this.#pilotIdx && this.#tab === 'palette';
-      px(ctx, PILOT_DATA[pid]?.name ?? pid, tx, ty, sel ? COL.YELLOW : COL.GRAY, 5, 'center');
+      snesText(ctx, PILOT_DATA[pid]?.name ?? pid, tx, ty, sel ? COL.YELLOW : COL.GRAY, 7, 'center');
       if (sel) { ctx.fillStyle = COL.ACCENT; ctx.fillRect(tx - 20, ty + 10, 40, 1); }
     });
     // Jukebox tab
     const jbSel = this.#tab === 'jukebox';
     const jbX = 50 + PILOTS.length * 100;
     drawMusicNote(ctx, jbX - 8, 21, jbSel ? this.#t : 0);
-    px(ctx, 'JUKEBOX', jbX + 6, 30, jbSel ? COL.YELLOW : COL.GRAY, 5, 'left');
+    snesText(ctx, 'JUKEBOX', jbX + 6, 30, jbSel ? COL.YELLOW : COL.GRAY, 7, 'left');
     if (jbSel) { ctx.fillStyle = COL.ACCENT; ctx.fillRect(jbX - 8, 40, 60, 1); }
 
     const pid = this.#currentPilot();
@@ -149,7 +149,7 @@ export class ExtrasScene {
       const y = slotStartY + si * 26;
       const sel = si === this.#slotIdx;
       if (sel) { px(ctx, '>', GAME_W/2 - 90, y + 2, COL.ACCENT, 5); }
-      px(ctx, label, GAME_W/2 - 80, y + 2, sel ? COL.YELLOW : COL.GRAY, 5, 'left');
+      snesText(ctx, label, GAME_W/2 - 80, y - 1, sel ? COL.YELLOW : COL.GRAY, 8, 'left');
       // Color swatch row
       PALETTE_OPTIONS[si].forEach((c, ci) => {
         const cx = GAME_W/2 - 10 + ci * 14, cy = y;
@@ -167,22 +167,22 @@ export class ExtrasScene {
 
   #drawJukeboxTab(ctx) {
     const found = SaveManager.getJukebox().collectedNotes.length;
-    px(ctx, 'EXTRAS - SHIP COLORS', GAME_W/2, 8, COL.YELLOW, 6, 'center');
+    snesText(ctx, 'EXTRAS', GAME_W/2, 6, COL.YELLOW, 10, 'center');
     divider(ctx, 24);
     // Tabs row (same as palette tab)
     PILOTS.forEach((pid, i) => {
       const tx = 50 + i * 100, ty = 30;
-      px(ctx, PILOT_DATA[pid]?.name ?? pid, tx, ty, COL.GRAY, 5, 'center');
+      snesText(ctx, PILOT_DATA[pid]?.name ?? pid, tx, ty, COL.GRAY, 7, 'center');
     });
     const jbX = 50 + PILOTS.length * 100;
     drawMusicNote(ctx, jbX - 8, 21, this.#t);
-    px(ctx, 'JUKEBOX', jbX + 6, 30, COL.YELLOW, 5, 'left');
+    snesText(ctx, 'JUKEBOX', jbX + 6, 30, COL.YELLOW, 7, 'left');
     ctx.fillStyle = COL.ACCENT; ctx.fillRect(jbX - 8, 40, 60, 1);
     divider(ctx, 48);
     // Jukebox summary
     const noteY = GAME_H / 2 - 20;
-    drawMusicNote(ctx, GAME_W / 2 - 30, noteY, this.#t);
-    px(ctx, `${found} / 5 NOTES FOUND`, GAME_W / 2 - 14, noteY + 4, found > 0 ? COL.YELLOW : COL.GRAY, 6, 'left');
+    drawMusicNote(ctx, GAME_W / 2 - 36, noteY, this.#t);
+    snesText(ctx, `${found} / 5 NOTES FOUND`, GAME_W / 2 - 14, noteY + 2, found > 0 ? COL.YELLOW : COL.GRAY, 8, 'left');
     px(ctx, 'Find hidden musical notes in the levels', GAME_W / 2, noteY + 26, COL.GRAY, 4, 'center');
     px(ctx, 'to unlock tracks in the Jukebox.', GAME_W / 2, noteY + 38, COL.GRAY, 4, 'center');
     divider(ctx, GAME_H - 22);
