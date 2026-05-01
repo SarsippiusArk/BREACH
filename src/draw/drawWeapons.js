@@ -1,5 +1,37 @@
 // ── Weapon & bullet visuals for per-pilot weapon systems ─────────────────────
 
+// ── Amy: Option orb sprite loader ────────────────────────────────────────────
+// Source: 38×27, lime-green chroma key RGB(128,255,128)
+// 3 frames (ping-pong 0→1→2→1): small (8px) → medium (10px) → large (12px)
+const _OPT_FRAME_SPECS = [ { sx:1, sw:8 }, { sx:11, sw:10 }, { sx:23, sw:12 } ];
+const _OPT_SH = 27, _OPT_SCALE = 2, _OPT_MS = 120;
+const _OPT_PINGPONG = [0, 1, 2, 1];
+const _optCache = [];
+
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image();
+    i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/amy_option.png';
+  });
+  if (!img) return;
+  for (const { sx, sw } of _OPT_FRAME_SPECS) {
+    const dw = sw * _OPT_SCALE, dh = _OPT_SH * _OPT_SCALE;
+    const tmp = Object.assign(document.createElement('canvas'), { width: sw, height: _OPT_SH });
+    const tc  = tmp.getContext('2d');
+    tc.drawImage(img, sx, 0, sw, _OPT_SH, 0, 0, sw, _OPT_SH);
+    const id = tc.getImageData(0, 0, sw, _OPT_SH); const d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      if (Math.abs(d[i]-128) + Math.abs(d[i+1]-255) + Math.abs(d[i+2]-128) <= 20) d[i+3] = 0;
+    }
+    tc.putImageData(id, 0, 0);
+    const oc  = Object.assign(document.createElement('canvas'), { width: dw, height: dh });
+    const c2d = oc.getContext('2d'); c2d.imageSmoothingEnabled = false;
+    c2d.drawImage(tmp, 0, 0, sw, _OPT_SH, 0, 0, dw, dh);
+    _optCache.push(oc);
+  }
+}());
+
 /** Akane: tiny vulcan pellet (fighter / gerwalk) */
 export function drawVulcanBullet(ctx, x, y) {
   x = Math.round(x); y = Math.round(y);
@@ -30,20 +62,32 @@ export function drawGroundMissile(ctx, x, y) {
   ctx.fillStyle = '#FF4400'; ctx.fillRect(x - 1, y + 1, 2, 1); // exhaust
 }
 
-/** Amy: Option orb (drawn at trail position) */
+/** Amy: Option orb — sprite ping-pong animation (falls back to procedural). */
 export function drawOptionOrb(ctx, x, y, t = 0) {
   x = Math.round(x); y = Math.round(y);
+
+  if (_optCache.length === 3) {
+    // Ping-pong: 0 → 1 → 2 → 1 → 0 → …  at _OPT_MS ms per step
+    const step  = Math.floor(Date.now() / _OPT_MS) % _OPT_PINGPONG.length;
+    const frame = _optCache[_OPT_PINGPONG[step]];
+    // Centre the orb sprite on (x+5, y+5) — same anchor as the procedural orb
+    // Orb content is centred at scaled-y ≈ 25 in the 54 px canvas
+    ctx.drawImage(frame,
+      Math.round(x + 5 - frame.width  / 2),
+      Math.round(y + 5 - 25));
+    return;
+  }
+
+  // ── Procedural fallback (while sprite loads) ────────────────────────────
   const pulse = 0.7 + Math.sin(t * 4) * 0.3;
   ctx.save();
-  // Outer glow
   ctx.globalAlpha = 0.3 * pulse;
-  ctx.fillStyle = '#00AAFF';
+  ctx.fillStyle = '#FF8800';
   ctx.beginPath(); ctx.arc(x + 5, y + 5, 9, 0, Math.PI * 2); ctx.fill();
-  // Core sphere
   ctx.globalAlpha = 0.9;
-  ctx.fillStyle = '#0055CC'; ctx.fillRect(x + 2, y + 2, 6, 6);
-  ctx.fillStyle = '#00AAFF'; ctx.fillRect(x + 3, y + 3, 4, 4);
-  ctx.fillStyle = '#88DDFF'; ctx.fillRect(x + 3, y + 3, 2, 2);
+  ctx.fillStyle = '#993300'; ctx.fillRect(x + 2, y + 2, 6, 6);
+  ctx.fillStyle = '#FF6600'; ctx.fillRect(x + 3, y + 3, 4, 4);
+  ctx.fillStyle = '#FFCC66'; ctx.fillRect(x + 3, y + 3, 2, 2);
   ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x + 3, y + 3, 1, 1);
   ctx.globalAlpha = 1;
   ctx.restore();
