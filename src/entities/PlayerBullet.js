@@ -2,6 +2,9 @@ import { drawPlayerBeam } from '../draw/drawSprites.js';
 import {
   drawVulcanBullet, drawDoubleShot, drawLaserBeam, drawGroundMissile,
   drawWaveCannon, drawMacrossMissile, drawHyperCannon,
+  drawAxelayPellet, drawNapalmPod, drawSpiralBomb,
+  drawDariusShot, drawZoneBomb,
+  drawBeanShot, drawThunderball, drawLiminaeOption,
 } from '../draw/drawWeapons.js';
 
 const BEAM_W = 8, BEAM_H = 3;
@@ -223,4 +226,173 @@ export function createMacrossMissile(x, y, deg = 0, targetRef = null, player = 0
     },
     draw(ctx) { drawMacrossMissile(ctx, this.x, this.y, this.vx, this.vy); },
   };
+}
+
+// ── Shane — Axelay bullet factories ──────────────────────────────────────────
+
+/** Phoenix spread shot (5-way; charged = 9-way arc) */
+export function createPhoenixShot(x, y, player = 0, charged = false) {
+  const angles = charged
+    ? [-80, -60, -40, -20, 0, 20, 40, 60, 80]
+    : [-40, -20, 0, 20, 40];
+  return angles.map(deg => {
+    const rad = deg * Math.PI / 180;
+    return {
+      type: 'playerBullet', alive: true,
+      x, y, w: 6, h: 2, player,
+      charged, damage: charged ? 2 : 1,
+      vx: Math.cos(rad) * 340, vy: Math.sin(rad) * 340,
+      age: 0, piercing: false,
+      update(d) { this.x+=this.vx*d; this.y+=this.vy*d; this.age+=d; if(this.age>1.2||this.x>520||this.y<-10||this.y>290)this.alive=false; },
+      draw(ctx) { drawAxelayPellet(ctx, this.x, this.y); },
+    };
+  });
+}
+
+/** Napalm: forward shot + a dropping napalm pod */
+export function createNapalmShot(x, y, player = 0, charged = false) {
+  const shots = [];
+  // Forward pellets
+  const cnt = charged ? 3 : 1;
+  for (let i = 0; i < cnt; i++) {
+    shots.push({
+      type: 'playerBullet', alive: true,
+      x, y: y + (i - Math.floor(cnt/2)) * 5, w: 8, h: 3, player,
+      charged, damage: charged ? 2 : 1, vx: 340, vy: 0, age: 0, piercing: false,
+      update(d) { this.x+=this.vx*d; this.age+=d; if(this.x>520||this.age>1.5)this.alive=false; },
+      draw(ctx) { drawAxelayPellet(ctx, this.x, this.y); },
+    });
+  }
+  // Napalm pod(s)
+  const pods = charged ? 3 : 1;
+  for (let i = 0; i < pods; i++) {
+    shots.push(createNapalmPod(x + i * 20, y, player));
+  }
+  return shots;
+}
+
+/** Single napalm pod that falls downward */
+export function createNapalmPod(x, y, player = 0) {
+  return {
+    type: 'playerBullet', alive: true,
+    x, y, w: 8, h: 5, player,
+    charged: false, damage: 3, vx: 180, vy: 60, age: 0, piercing: false,
+    update(d) { this.x+=this.vx*d; this.y+=this.vy*d; this.age+=d; if(this.x>520||this.y>290||this.age>2.5)this.alive=false; },
+    draw(ctx) { drawNapalmPod(ctx, this.x, this.y); },
+  };
+}
+
+/** Vulcan burst: 3-way tight (charged = 5-way dense) */
+export function createAxelayVulcan(x, y, player = 0, charged = false) {
+  const angles = charged ? [-20, -10, 0, 10, 20] : [-15, 0, 15];
+  return angles.map(deg => {
+    const rad = deg * Math.PI / 180;
+    return {
+      type: 'playerBullet', alive: true,
+      x, y, w: 5, h: 2, player,
+      charged, damage: 1,
+      vx: Math.cos(rad) * 380, vy: Math.sin(rad) * 380,
+      age: 0, piercing: false,
+      update(d) { this.x+=this.vx*d; this.y+=this.vy*d; this.age+=d; if(this.age>1||this.x>520||this.y<-10||this.y>290)this.alive=false; },
+      draw(ctx) { drawAxelayPellet(ctx, this.x, this.y); },
+    };
+  });
+}
+
+/** Spiral bomb: slow large piercing shot (charged = 3 simultaneous) */
+export function createSpiralBomb(x, y, player = 0, charged = false) {
+  const cnt = charged ? 3 : 1;
+  return Array.from({ length: cnt }, (_, i) => {
+    const vy = cnt > 1 ? (i - 1) * 25 : 0;
+    let age = 0;
+    return {
+      type: 'playerBullet', alive: true,
+      x, y: y + (i - Math.floor(cnt/2)) * 8, w: 8, h: 8, player,
+      charged, damage: 4, vx: 120, vy, age: 0, piercing: true,
+      update(d) { this.x+=this.vx*d; this.y+=this.vy*d; this.age+=d; if(this.age>3.5||this.x>520||this.y<-20||this.y>300)this.alive=false; },
+      draw(ctx) { drawSpiralBomb(ctx, this.x, this.y, this.age); },
+    };
+  });
+}
+
+// ── Faraday — Darius bullet factories ────────────────────────────────────────
+
+/** Darius arm shot — appearance and behaviour scale with tier (0-3) */
+export function createDariusShot(x, y, tier = 0, player = 0, charged = false) {
+  const configs = [
+    { angles: [0],                             speed: 360, w: 12, h: 2, dmg: 1, piercing: false },
+    { angles: [-10, 0, 10],                    speed: 340, w: 12, h: 3, dmg: 1, piercing: false },
+    { angles: [0],                             speed: 400, w: 28, h: 5, dmg: 3, piercing: true  },
+    { angles: [-14, -7, 0, 7, 14, -25, 25],    speed: 320, w: 10, h: 3, dmg: 2, piercing: false },
+  ];
+  const { angles, speed, w, h, dmg, piercing } = configs[Math.min(tier, 3)];
+  const finalAngles = charged && tier < 3 ? [...angles, ...angles.map(a => a + 5), ...angles.map(a => a - 5)] : angles;
+  return finalAngles.map(deg => {
+    const rad = deg * Math.PI / 180;
+    return {
+      type: 'playerBullet', alive: true,
+      x, y: y - h/2, w, h, player,
+      charged, damage: charged ? dmg + 1 : dmg, vx: Math.cos(rad)*speed, vy: Math.sin(rad)*speed,
+      age: 0, piercing,
+      update(d) { this.x+=this.vx*d; this.y+=this.vy*d; this.age+=d; if(this.x>520||this.x<-20||this.y<-10||this.y>290||this.age>2)this.alive=false; },
+      draw(ctx) { drawDariusShot(ctx, this.x, this.y, tier); },
+    };
+  });
+}
+
+/** Zone bomb: expands then dies */
+export function createZoneBomb(x, y, player = 0) {
+  let age = 0;
+  return [{
+    type: 'playerBullet', alive: true,
+    x, y, w: 40, h: 40, player,
+    charged: true, damage: 25, vx: 0, vy: 0, age: 0, piercing: false,
+    update(d) {
+      this.age += d;
+      this.w = this.h = 20 + this.age * 160;
+      this.x -= 80 * d; this.y -= 80 * d;
+      if (this.age > 0.5) this.alive = false;
+    },
+    draw(ctx) { drawZoneBomb(ctx, this.x + this.w/2, this.y + this.h/2, this.age); },
+  }];
+}
+
+// ── Liminae — TwinBee bullet factories ───────────────────────────────────────
+
+/** Twin bean shots */
+export function createBeanShot(x, y, player = 0) {
+  return [-3, 3].map(offset => ({
+    type: 'playerBullet', alive: true,
+    x, y: y + offset, w: 6, h: 3, player,
+    charged: false, damage: 1, vx: 360, vy: 0, age: 0, piercing: false,
+    update(d) { this.x+=this.vx*d; this.age+=d; if(this.x>520||this.age>1.5)this.alive=false; },
+    draw(ctx) { drawBeanShot(ctx, this.x, this.y); },
+  }));
+}
+
+/** Thunderball: bouncing electric orb */
+export function createThunderball(x, y, player = 0) {
+  let bounces = 0;
+  return [{
+    type: 'playerBullet', alive: true,
+    x, y, w: 8, h: 8, player,
+    charged: true, damage: 8, vx: 220, vy: -80, age: 0, piercing: true,
+    update(d) {
+      this.x += this.vx * d; this.y += this.vy * d; this.age += d;
+      if ((this.y <= 0 || this.y >= 262) && bounces < 4) { this.vy *= -1; bounces++; }
+      if (this.x > 520 || this.age > 3.5 || bounces >= 4) this.alive = false;
+    },
+    draw(ctx) { drawThunderball(ctx, this.x, this.y, this.age); },
+  }];
+}
+
+/** Liminae option orb shot (small bean from companion) */
+export function createLiminaeOptionShot(x, y, player = 0) {
+  return [{
+    type: 'playerBullet', alive: true,
+    x, y, w: 5, h: 2, player,
+    charged: false, damage: 1, vx: 360, vy: 0, age: 0, piercing: false,
+    update(d) { this.x+=this.vx*d; this.age+=d; if(this.x>520||this.age>1.5)this.alive=false; },
+    draw(ctx) { drawBeanShot(ctx, this.x, this.y); },
+  }];
 }

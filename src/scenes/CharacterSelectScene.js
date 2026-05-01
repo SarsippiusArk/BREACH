@@ -1,10 +1,10 @@
 import { GAME_W, GAME_H, SCENES, COL, STARTER_PILOTS, PILOT_DATA } from '../constants.js';
 import { SaveManager } from '../engine/SaveManager.js';
 import { px, panel, drawMenuStarfield, statBar, divider } from '../draw/drawUI.js';
-import { drawAmyShip, drawRohanShip, drawAkaneShip, SHIP_W, SHIP_H } from '../draw/drawSprites.js';
+import { drawAmyShip, drawRohanShip, drawAkaneShip, drawShaneShip, drawFaradayShip, drawLiminaeShip, SHIP_W, SHIP_H } from '../draw/drawSprites.js';
 
-const DRAW_FNS = { amy: drawAmyShip, rohan: drawRohanShip, akane: drawAkaneShip };
-const ALL_PILOTS = ['amy','rohan','akane','secret1','secret2','alien'];
+const DRAW_FNS = { amy: drawAmyShip, rohan: drawRohanShip, akane: drawAkaneShip, shane: drawShaneShip, faraday: drawFaradayShip, liminae: drawLiminaeShip };
+const ALL_PILOTS = ['amy','rohan','akane','shane','faraday','liminae'];
 const STAT_LABELS = ['SPD','RNG','ARM','SPC'];
 const STAT_KEYS   = ['speed','fireRate','armor','special'];
 

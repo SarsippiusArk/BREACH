@@ -163,6 +163,7 @@ export class GameScene {
     for (const e of this.#entities.getGroup('powerup'))      e.update?.(delta);
     for (const e of this.#entities.getGroup('musicNote'))    e.update?.(delta);
     for (const e of this.#entities.getGroup('forcePod'))     e.update?.(delta);
+    for (const e of this.#entities.getGroup('bell'))         e.update?.(delta);
     this.#particles.update(delta);
 
     // Collisions
@@ -265,6 +266,22 @@ export class GameScene {
       this.#noteNotif = { text: n.title, timer: 3.5 };
       this.#audio.playSound('lifeUp');
       this.#particles.sparkle(n.x + n.w/2, n.y + n.h/2, '#FFDB00');
+    });
+
+    // Player bullets → bells (shoot to cycle colour; bullet consumed)
+    const bells = this.#entities.getGroup('bell');
+    checkGroups(pBullets, bells, (b, bell) => {
+      if (!b.piercing) b.alive = false;
+      bell.hit();
+    });
+
+    // Bells → players (collect bell, apply power via weapon system)
+    checkGroups(bells, this.#players, (bell, p) => {
+      if (!p.alive) return;
+      const colorName = bell.collect();
+      p.ws?.onBellCollect?.(p, colorName);
+      this.#particles.sparkle(bell.x + bell.w/2, bell.y + bell.h/2, '#FFDD88');
+      this.#audio.playSound('powerup');
     });
 
     // Rohan's Force Pod — absorbs enemy bullets (attached) / pierces enemies (flying)
@@ -372,7 +389,7 @@ export class GameScene {
     drawBackground(ctx, this.#camera.scrollX, this.#loader.theme);
 
     // Entities — all positions are screen-space, draw directly
-    for (const type of ['powerup','musicNote','enemy','boss','playerBullet','forcePod','player','enemyBullet']) {
+    for (const type of ['powerup','musicNote','enemy','boss','playerBullet','forcePod','bell','player','enemyBullet']) {
       for (const e of this.#entities.getGroup(type)) {
         try {
           e.draw?.(ctx);
@@ -395,10 +412,10 @@ export class GameScene {
       bossMaxHp: this.#bossMaxHp,
     });
 
-    // Pilot-specific HUD overlays
-    const p1obj = this.#players[0];
-    if (p1obj?.pilotId === 'amy' && (p1obj?.capsuleBarTimer ?? 0) > 0) this.#drawCapsuleBar(ctx, p1obj);
-    if (p1obj?.pilotId === 'akane') this.#drawAkaneMode(ctx, p1obj);
+    // Pilot-specific HUD overlays (delegated to weapon system)
+    for (const p of this.#players) {
+      if (p?.alive) p.ws?.drawHUD?.(ctx, p);
+    }
 
     // Music note found notification
     if (this.#noteNotif.timer > 0) {
@@ -447,42 +464,5 @@ export class GameScene {
       if (sel) { px(ctx, '>', GAME_W/2 - 46, y, COL.ACCENT, 6); }
       px(ctx, label, GAME_W/2 - 36, y, sel ? COL.YELLOW : COL.WHITE, 6);
     });
-  }
-
-  #drawCapsuleBar(ctx, p) {
-    const LABELS = ['SPD','MSL','DBL','LAS','OPT'];
-    const upgs = p.upgrades ?? {};
-    const active = [upgs.speed > 0, upgs.missile, upgs.double, upgs.laser, upgs.optionCount > 0];
-    const alpha = Math.min(1, (p.capsuleBarTimer ?? 0) * 2.5);
-    const boxW = 34, boxH = 12, gap = 3;
-    const bx = 4, by = GAME_H - 32;
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = 'rgba(0,8,24,0.85)';
-    ctx.fillRect(bx - 2, by - 10, LABELS.length * (boxW + gap) + 2, boxH + 12);
-    px(ctx, 'CAPSULE', bx, by - 9, '#88AACC', 4);
-    for (let i = 0; i < LABELS.length; i++) {
-      const x = bx + i * (boxW + gap);
-      const isSel = i === p.capsuleSel;
-      ctx.fillStyle = isSel ? '#FFCC00' : active[i] ? '#002266' : '#111a2e';
-      ctx.fillRect(x, by, boxW, boxH);
-      ctx.strokeStyle = isSel ? '#FFFFFF' : '#446699'; ctx.lineWidth = 1;
-      ctx.strokeRect(x, by, boxW, boxH);
-      ctx.font = '5px "Press Start 2P", monospace';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = isSel ? '#000010' : active[i] ? '#66DDFF' : '#3a5570';
-      ctx.fillText(LABELS[i], x + boxW / 2, by + boxH / 2);
-    }
-    ctx.globalAlpha = 1; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-  }
-
-  #drawAkaneMode(ctx, p) {
-    const mode = (p.akaneMode ?? 'fighter').toUpperCase();
-    const cols = { FIGHTER: '#FF8844', GERWALK: '#00FFCC', BATTROID: '#FF55FF' };
-    const col = cols[mode] ?? '#FFFFFF';
-    ctx.fillStyle = 'rgba(0,8,24,0.75)'; ctx.fillRect(2, GAME_H - 22, 62, 11);
-    ctx.font = '5px "Press Start 2P", monospace';
-    ctx.fillStyle = col; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-    ctx.fillText(mode, 4, GAME_H - 21);
-    ctx.textBaseline = 'top';
   }
 }

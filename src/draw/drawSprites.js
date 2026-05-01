@@ -498,3 +498,114 @@ export function drawMusicNote(ctx, x, y, age = 0) {
   ctx.globalAlpha = 1;
   ctx.restore();
 }
+
+// ── New Pilot Ships ───────────────────────────────────────────────────────────
+
+/** Shane: heavy military gunship — angular, dark steel, wide fuselage */
+export function drawShaneShip(ctx, x, y, pal, invincible) {
+  if (invincible && Math.floor(Date.now() / 80) % 2) return;
+  x = Math.round(x); y = Math.round(y);
+  const [m, li, ck] = pal || ['#445566', '#8899BB', '#CCDDFF', '#FF9200'];
+  const eg = Math.floor(Date.now() / 130) % 2 ? '#FFDD44' : '#FF9200';
+  // Engine exhaust (twin)
+  ctx.fillStyle = eg;
+  ctx.fillRect(x, y + 3, 2, 2); ctx.fillRect(x, y + 7, 2, 2);
+  ctx.fillStyle = '#FF6600';
+  ctx.fillRect(x + 1, y + 3, 1, 2); ctx.fillRect(x + 1, y + 7, 1, 2);
+  // Heavy armour plating — wide, flat silhouette
+  ctx.fillStyle = '#223344';
+  ctx.fillRect(x + 2, y + 1, 4, 2); ctx.fillRect(x + 2, y + 9, 4, 2);
+  ctx.fillStyle = m;
+  ctx.fillRect(x + 2, y + 2, 16, 8);   // main fuselage
+  ctx.fillRect(x + 4, y + 1, 10, 10);  // expanded armour
+  // Hull highlight
+  ctx.fillStyle = li;
+  ctx.fillRect(x + 5, y + 4, 8, 4);
+  // Armour seams
+  ctx.fillStyle = '#223344';
+  ctx.fillRect(x + 4, y + 2, 1, 8);
+  ctx.fillRect(x + 10, y + 2, 1, 8);
+  // Cockpit (small, heavily shielded)
+  ctx.fillStyle = '#334455'; ctx.fillRect(x + 13, y + 4, 4, 4);
+  ctx.fillStyle = ck; ctx.fillRect(x + 14, y + 4, 2, 4);
+  ctx.fillStyle = '#DDEEFF'; ctx.fillRect(x + 14, y + 4, 1, 1);
+  // Dual cannon barrels
+  ctx.fillStyle = '#6688AA';
+  ctx.fillRect(x + 18, y + 2, 6, 2); ctx.fillRect(x + 18, y + 8, 6, 2);
+  ctx.fillStyle = '#AACCEE';
+  ctx.fillRect(x + 22, y + 2, 2, 1); ctx.fillRect(x + 22, y + 8, 2, 1);
+}
+
+/** Faraday: Silver Hawk variant — flowing organic form, gold/silver shimmer */
+export function drawFaradayShip(ctx, x, y, pal, invincible) {
+  if (invincible && Math.floor(Date.now() / 80) % 2) return;
+  x = Math.round(x); y = Math.round(y);
+  const [m, li, ck] = pal || ['#887733', '#DDBB44', '#FFEE99', '#FF9200'];
+  const eg = Math.floor(Date.now() / 110) % 2 ? '#FFFFFF' : '#FFEE44';
+  // Unique trailing engine (rear-swept exhausts)
+  ctx.fillStyle = eg;
+  ctx.fillRect(x, y + 4, 1, 4);
+  ctx.fillStyle = '#FF8800';
+  ctx.fillRect(x + 1, y + 4, 2, 4);
+  // Organic swept fuselage
+  ctx.fillStyle = '#553300';
+  ctx.fillRect(x + 2, y + 3, 3, 1); ctx.fillRect(x + 2, y + 8, 3, 1);
+  ctx.fillStyle = m;
+  ctx.fillRect(x + 3, y + 2, 14, 8); // wide organic body
+  ctx.fillRect(x + 5, y + 1, 8, 10);
+  ctx.fillRect(x + 11, y + 3, 6, 6);
+  // Gold shimmer highlights
+  ctx.fillStyle = li;
+  ctx.fillRect(x + 5, y + 3, 6, 6);
+  ctx.fillRect(x + 7, y + 2, 4, 8);
+  // Wing sweep accents
+  ctx.fillStyle = '#AAAAAA';
+  ctx.fillRect(x + 3, y + 3, 2, 1); ctx.fillRect(x + 3, y + 8, 2, 1);
+  // Cockpit bubble
+  ctx.fillStyle = '#553300'; ctx.fillRect(x + 12, y + 4, 4, 4);
+  ctx.fillStyle = ck; ctx.fillRect(x + 13, y + 4, 2, 4);
+  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x + 13, y + 4, 1, 1);
+  // Silver Hawk nose spike
+  ctx.fillStyle = '#CCCCCC';
+  ctx.fillRect(x + 17, y + 5, 7, 2);
+  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x + 22, y + 5, 2, 1);
+}
+
+/** Liminae: alien bio-ship — asymmetric, violet/teal crystalline */
+export function drawLiminaeShip(ctx, x, y, pal, invincible) {
+  if (invincible && Math.floor(Date.now() / 80) % 2) return;
+  x = Math.round(x); y = Math.round(y);
+  const [m, li, ck] = pal || ['#440066', '#BB44FF', '#EECCFF', '#44FFCC'];
+  const t   = Date.now() * 0.004;
+  const eg  = Math.floor(t * 4) % 2 ? '#BB44FF' : '#44FFCC';
+  // Alien exhaust — alternating colours
+  ctx.fillStyle = eg; ctx.fillRect(x, y + 4, 2, 4);
+  ctx.fillStyle = '#220033'; ctx.fillRect(x + 1, y + 5, 1, 2);
+  // Crystalline body (slightly asymmetric — non-Euclidean flavour)
+  ctx.fillStyle = '#330044';
+  ctx.fillRect(x + 2, y + 2, 3, 2); ctx.fillRect(x + 2, y + 8, 3, 1);
+  ctx.fillStyle = m;
+  ctx.fillRect(x + 3, y + 3, 14, 6);
+  ctx.fillRect(x + 5, y + 1, 7, 10);
+  ctx.fillRect(x + 10, y + 2, 5, 8);
+  // Inner crystal glow
+  ctx.fillStyle = li;
+  ctx.fillRect(x + 5, y + 3, 5, 6);
+  ctx.fillRect(x + 7, y + 2, 3, 8);
+  // Glowing lattice seams (alien geometry)
+  ctx.fillStyle = ck;
+  ctx.fillRect(x + 6, y + 4, 1, 4);
+  ctx.fillRect(x + 9, y + 3, 1, 6);
+  ctx.fillRect(x + 7, y + 3, 1, 1); ctx.fillRect(x + 7, y + 8, 1, 1);
+  // Bio-cockpit (organic glow)
+  ctx.fillStyle = '#220033'; ctx.fillRect(x + 14, y + 4, 4, 4);
+  ctx.fillStyle = ck; ctx.fillRect(x + 15, y + 4, 2, 4);
+  const pulse = 0.4 + Math.sin(t * 6) * 0.3;
+  ctx.globalAlpha = pulse;
+  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x + 15, y + 4, 1, 1);
+  ctx.globalAlpha = 1;
+  // Crystal needle tip (slightly offset — alien asymmetry)
+  ctx.fillStyle = li;
+  ctx.fillRect(x + 18, y + 4, 5, 3);
+  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x + 21, y + 5, 2, 1);
+}

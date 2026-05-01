@@ -24,7 +24,7 @@ export class GameOverScene {
     }
     if (win) {
       const save = SaveManager.getSave();
-      if (level >= 8) { save.normalComplete = true; const unlocks = SaveManager.getUnlocks(); unlocks.ngplus = true; unlocks.alien = true; SaveManager.writeUnlocks(unlocks); }
+      if (level >= 8) { save.normalComplete = true; const unlocks = SaveManager.getUnlocks(); unlocks.ngplus = true; unlocks.liminae = true; SaveManager.writeUnlocks(unlocks); }
       SaveManager.writeSave(save);
     }
   }

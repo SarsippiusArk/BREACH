@@ -24,18 +24,18 @@ const DEFAULT_UNLOCKS = {
   ngplus:      false,
   levelEditor: false,
   saveEditor:  false,
-  secret1:     false,
-  secret2:     false,
-  alien:       false,
+  shane:       false,
+  faraday:     false,
+  liminae:     false,
 };
 
 const DEFAULT_PALETTE = {
   amy:     ['#0049DB', '#00B6FF', '#00DBFF', '#FF9200'],
   rohan:   ['#009200', '#49DB00', '#00DBDB', '#FF9200'],
   akane:   ['#B60000', '#DB4900', '#FFB600', '#FF9200'],
-  secret1: ['#6D6D92', '#B6B6DB', '#DBDBFF', '#FFDB00'],
-  secret2: ['#924900', '#FFDB00', '#FFFF00', '#FF6D00'],
-  alien:   ['#006D49', '#49DB92', '#00FFDB', '#B600FF'],
+  shane:   ['#445566', '#8899BB', '#CCDDFF', '#FF9200'],
+  faraday: ['#887733', '#DDBB44', '#FFEE99', '#FF6600'],
+  liminae: ['#440066', '#BB44FF', '#EECCFF', '#44FFCC'],
 };
 
 const DEFAULT_JUKEBOX = {

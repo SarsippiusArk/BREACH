@@ -115,3 +115,110 @@ export function drawHyperCannon(ctx, x, y) {
   ctx.fillStyle = '#FF88FF'; ctx.fillRect(x + 2, y - 8, 2, 20);
   ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x + 2, y - 6, 2, 16);
 }
+
+// ── Shane — Axelay weapons ────────────────────────────────────────────────────
+
+/** Axelay: Phoenix / Vulcan pellet (orange-tipped) */
+export function drawAxelayPellet(ctx, x, y) {
+  x = Math.round(x); y = Math.round(y);
+  ctx.fillStyle = '#FF8800'; ctx.fillRect(x, y, 6, 2);
+  ctx.fillStyle = '#FFFF00'; ctx.fillRect(x + 3, y, 2, 1);
+}
+
+/** Axelay: Napalm pod (falls downward, olive/fire colours) */
+export function drawNapalmPod(ctx, x, y) {
+  x = Math.round(x); y = Math.round(y);
+  ctx.fillStyle = '#664400'; ctx.fillRect(x, y, 8, 5);
+  ctx.fillStyle = '#CC6600'; ctx.fillRect(x + 1, y + 1, 6, 3);
+  ctx.fillStyle = '#FF4400'; ctx.fillRect(x + 2, y + 2, 4, 1); // warhead stripe
+  ctx.fillStyle = '#FFAA00'; ctx.fillRect(x + 6, y + 2, 2, 1); // nose
+}
+
+/** Axelay: Spiral bomb (rotating slow-moving sphere) */
+export function drawSpiralBomb(ctx, x, y, age = 0) {
+  x = Math.round(x); y = Math.round(y);
+  const t = age * 5;
+  ctx.save();
+  ctx.globalAlpha = 0.3;
+  ctx.fillStyle = '#AAFF44'; ctx.fillRect(x - 2, y - 2, 12, 12);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#224400'; ctx.fillRect(x, y, 8, 8);
+  ctx.fillStyle = '#44AA00'; ctx.fillRect(x + 1, y + 1, 6, 6);
+  ctx.fillStyle = '#88FF22'; ctx.fillRect(x + 2, y + 2, 4, 4);
+  // rotating spoke
+  const sx = 4 + Math.cos(t) * 3, sy = 4 + Math.sin(t) * 3;
+  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x + Math.round(sx), y + Math.round(sy), 1, 1);
+  ctx.restore();
+}
+
+// ── Faraday — Darius weapons ──────────────────────────────────────────────────
+
+/** Darius: tier-coloured beam (silver at 0, gold at 3) */
+export function drawDariusShot(ctx, x, y, tier = 0) {
+  x = Math.round(x); y = Math.round(y);
+  const cols = ['#BBBBCC','#4488FF','#00DDFF','#FFDD44'];
+  const glows = ['#8888AA','#224488','#006688','#886600'];
+  ctx.fillStyle = glows[tier]; ctx.fillRect(x, y - 1, 12 + tier * 4, 4);
+  ctx.fillStyle = cols[tier];  ctx.fillRect(x, y,     10 + tier * 4, 2);
+  ctx.fillStyle = '#FFFFFF';   ctx.fillRect(x + 2, y, 4, 1);
+}
+
+/** Darius: zone bomb (large black-hole / explosion sphere) */
+export function drawZoneBomb(ctx, x, y, age = 0) {
+  x = Math.round(x); y = Math.round(y);
+  const r = 10 + age * 80;
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, 0.5 - age * 0.8);
+  ctx.strokeStyle = '#FFDD44'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle = '#FF8800'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(x, y, r * 0.6, 0, Math.PI * 2); ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+// ── Liminae — TwinBee weapons ─────────────────────────────────────────────────
+
+/** TwinBee: small twin bean shot */
+export function drawBeanShot(ctx, x, y) {
+  x = Math.round(x); y = Math.round(y);
+  ctx.fillStyle = '#BB44FF'; ctx.fillRect(x, y, 6, 3);
+  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x + 1, y, 3, 1);
+  ctx.fillStyle = '#EECCFF'; ctx.fillRect(x + 4, y + 1, 2, 1);
+}
+
+/** TwinBee: bouncing thunderball */
+export function drawThunderball(ctx, x, y, age = 0) {
+  x = Math.round(x); y = Math.round(y);
+  const t = age * 8;
+  ctx.save();
+  ctx.globalAlpha = 0.4 + Math.sin(t) * 0.2;
+  ctx.fillStyle = '#FFFF00'; ctx.fillRect(x - 3, y - 3, 14, 14);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#664400'; ctx.fillRect(x, y, 8, 8);
+  ctx.fillStyle = '#FFAA00'; ctx.fillRect(x + 1, y + 1, 6, 6);
+  ctx.fillStyle = '#FFFF88'; ctx.fillRect(x + 2, y + 2, 4, 4);
+  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x + 3, y + 3, 2, 2);
+  // arc sparks
+  ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 0.5; ctx.globalAlpha = 0.7;
+  ctx.beginPath(); ctx.arc(x + 4, y + 4, 7 + Math.sin(t) * 2, t, t + 1.2); ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+/** TwinBee: Liminae option companion (small violet orb) */
+export function drawLiminaeOption(ctx, x, y, t = 0) {
+  x = Math.round(x); y = Math.round(y);
+  const pulse = 0.7 + Math.sin(t * 4) * 0.3;
+  ctx.save();
+  ctx.globalAlpha = 0.3 * pulse;
+  ctx.fillStyle = '#CC44FF';
+  ctx.beginPath(); ctx.arc(x + 4, y + 4, 8, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 0.9;
+  ctx.fillStyle = '#550077'; ctx.fillRect(x + 1, y + 1, 6, 6);
+  ctx.fillStyle = '#AA22EE'; ctx.fillRect(x + 2, y + 2, 4, 4);
+  ctx.fillStyle = '#DD88FF'; ctx.fillRect(x + 2, y + 2, 2, 2);
+  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x + 2, y + 2, 1, 1);
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
