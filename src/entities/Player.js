@@ -49,7 +49,8 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
     // Pending spawn queues (consumed by GameScene each frame)
     bulletsToSpawn:  [],
     entitiesToSpawn: [],
-    bankDir: 0,  // -1/0/1 horizontal movement direction (used by Amy's draw)
+    bankDir:     0,   // -1/0/1 horizontal movement direction (Amy sprite)
+    upBankPhase: 0,   // 0–2 float: vertical banking state (Amy sprite)
 
     // Compatibility shims (weapon systems may read/write these)
     onPowerUpCollect() { this.ws.onPowerUpCollect(this); },
@@ -70,7 +71,15 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
       if (input.isDown(pi, 'left'))  dx -= 1;
       if (input.isDown(pi, 'right')) dx += 1;
       if (dx && dy) { dx *= 0.707; dy *= 0.707; }
-      this.bankDir = dx > 0 ? 1 : dx < 0 ? -1 : 0;
+      this.bankDir     = dx > 0 ? 1 : dx < 0 ? -1 : 0;
+
+      // Vertical banking phase: advances when moving up, retreats otherwise
+      const BANK_RATE = 6; // phases per second (0→2 in ~0.33 s)
+      if (dy < 0) {
+        this.upBankPhase = Math.min(2, this.upBankPhase + BANK_RATE * delta);
+      } else {
+        this.upBankPhase = Math.max(0, this.upBankPhase - BANK_RATE * delta);
+      }
       this.x = Math.max(0, Math.min(GAME_W - SHIP_W, this.x + dx * spd * delta));
       this.y = Math.max(0, Math.min(GAME_H - SHIP_H, this.y + dy * spd * delta));
       this.x = Math.min(this.x, GAME_W * 0.42);
@@ -141,7 +150,7 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
       const drawFn = DRAW_FNS[this.pilotId] ?? drawAmyShip;
 
       this.ws.drawShipPre(ctx, this);
-      drawFn(ctx, this.x, this.y, this.palette, inv, this.bankDir);
+      drawFn(ctx, this.x, this.y, this.palette, inv, this.bankDir, this.upBankPhase);
       this.ws.drawShipPost(ctx, this);
 
       if (this.chargeLevel > 0.1) {

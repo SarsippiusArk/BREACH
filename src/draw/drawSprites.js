@@ -17,6 +17,7 @@ const AMY_FRAMES_SRC = [
 ];
 const _amyFrameCache = []; // pre-keyed + scaled display canvases
 let   _amyHorizCache  = null; // horizontal-movement sprite (single frame)
+const _amyUpBankCache = []; // 2-frame upward-banking animation
 
 (async function () {
   const img = await new Promise(res => {
@@ -38,6 +39,32 @@ let   _amyHorizCache  = null; // horizontal-movement sprite (single frame)
   const c2d = oc.getContext('2d'); c2d.imageSmoothingEnabled = false;
   c2d.drawImage(tmp, 0, 0, SW, SH, 0, 0, DW, DH);
   _amyHorizCache = oc;
+}());
+
+// ── Amy: upward-banking animation (2 frames, 26×20 each, 1px gap) ─────────────
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image();
+    i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/amy_up_bank.png';
+  });
+  if (!img) return;
+  const FW = 26, FH = 20, GAP = 1, DW = 52, DH = 40;
+  const frames = [{ sx: 0, sy: 0 }, { sx: FW + GAP, sy: 0 }];
+  for (const { sx, sy } of frames) {
+    const tmp = Object.assign(document.createElement('canvas'), { width: FW, height: FH });
+    const tc  = tmp.getContext('2d');
+    tc.drawImage(img, sx, sy, FW, FH, 0, 0, FW, FH);
+    const id = tc.getImageData(0, 0, FW, FH); const d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      if (Math.abs(d[i]-AMY_BG[0]) + Math.abs(d[i+1]-AMY_BG[1]) + Math.abs(d[i+2]-AMY_BG[2]) <= AMY_BG_TOL) d[i+3] = 0;
+    }
+    tc.putImageData(id, 0, 0);
+    const oc  = Object.assign(document.createElement('canvas'), { width: DW, height: DH });
+    const c2d = oc.getContext('2d'); c2d.imageSmoothingEnabled = false;
+    c2d.drawImage(tmp, 0, 0, FW, FH, 0, 0, DW, DH);
+    _amyUpBankCache.push(oc);
+  }
 }());
 
 (async function () {
@@ -76,13 +103,14 @@ let   _amyHorizCache  = null; // horizontal-movement sprite (single frame)
 // Player Ships ─────────────────────────────────────────────────────────────────
 
 /** Amy: Gradius III ship sprite (Konami 1991) — bg-keyed, pixel art 2× scaled
- *  @param {number} bankDir  -1 = moving left, 0 = still/up/down, 1 = moving right
+ *  @param {number} bankDir  -1 = left, 0 = none, 1 = right
+ *  @param {number} upPhase  0–2 float: 0=neutral, 1=slight bank, 2=full bank up
  */
-export function drawAmyShip(ctx, x, y, pal, invincible, bankDir = 0) {
+export function drawAmyShip(ctx, x, y, pal, invincible, bankDir = 0, upPhase = 0) {
   if (invincible && Math.floor(Date.now() / 80) % 2) return;
   x = Math.round(x); y = Math.round(y);
 
-  // ── Horizontal-movement sprite ─────────────────────────────────────────────
+  // ── Horizontal-movement sprite (highest priority) ─────────────────────────
   if (bankDir !== 0 && _amyHorizCache) {
     const DW = 52, DH = 36;
     const ox = x + Math.round(SHIP_W / 2 - DW / 2);
@@ -98,7 +126,15 @@ export function drawAmyShip(ctx, x, y, pal, invincible, bankDir = 0) {
     return;
   }
 
-  // ── Sprite sheet (5 animation frames, pre-keyed) ───────────────────────────
+  // ── Upward-banking animation ──────────────────────────────────────────
+  if (upPhase > 0.1 && _amyUpBankCache.length === 2) {
+    const fi  = upPhase >= 1.5 ? 1 : 0;   // frame 0 = slight bank, 1 = full bank
+    const DW = 52, DH = 40;
+    const ox = x + Math.round(SHIP_W / 2 - DW / 2);
+    const oy = y + Math.round(SHIP_H / 2 - DH / 2);
+    ctx.drawImage(_amyUpBankCache[fi], 0, 0, DW, DH, ox, oy, DW, DH);
+    return;
+  }
   if (_amyFrameCache.length > 0) {
     const fi = Math.floor(Date.now() / 150) % _amyFrameCache.length;
     const DW = 56, DH = 29;
