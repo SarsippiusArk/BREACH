@@ -25,6 +25,7 @@ export class GameScene {
   #levelTitle = ''; #titleTimer = 3;
   #noteStats = { hitCount: 0, killCount: 0, puCount: 0, notesSpawned: new Set() };
   #noteNotif  = { text: '', timer: 0 };
+  #runTimer   = 0; // elapsed seconds since level start (used for hidden unlock checks)
 
   constructor(gameState, audio) {
     this.#state = gameState;
@@ -43,6 +44,7 @@ export class GameScene {
     this.#titleTimer = 3;
     this.#noteStats = { hitCount: 0, killCount: 0, puCount: 0, notesSpawned: new Set() };
     this.#noteNotif  = { text: '', timer: 0 };
+    this.#runTimer   = 0;
 
     this.#camera = new Camera();
     this.#entities = new EntityManager();
@@ -54,7 +56,17 @@ export class GameScene {
     this.#loader.onSpawnEntity = (e) => this.#entities.add(e);
     this.#loader.onBossAppear  = (kind) => {
       this.#camera.pause();
-      if (kind === 'rift_sovereign' || kind === 'leviathan') this.#audio.startMusic('boss');
+      if (kind === 'rift_sovereign' || kind === 'leviathan') {
+        this.#audio.startMusic('boss');
+        // Hidden unlock: reach the main boss in under 130 s (Hot Entry)
+        if (this.#runTimer <= 130) {
+          const unlocks = SaveManager.getUnlocks();
+          if (!unlocks.shane) {
+            unlocks.shane = true;
+            SaveManager.writeUnlocks(unlocks);
+          }
+        }
+      }
     };
     this.#loader.onLevelComplete = () => { this.#levelComplete = true; this.#completeTimer = 3.5; };
 
@@ -93,6 +105,7 @@ export class GameScene {
       return;
     }
     if (this.#titleTimer > 0) this.#titleTimer -= delta;
+    this.#runTimer += delta;
 
     // Pause check
     if (input.isPressed(0,'pause') || input.isPressed(1,'pause')) {
