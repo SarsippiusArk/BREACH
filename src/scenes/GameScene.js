@@ -4,7 +4,7 @@ import { EntityManager } from '../engine/EntityManager.js';
 import { ParticleSystem } from '../engine/ParticleSystem.js';
 import { LevelLoader } from '../levels/LevelLoader.js';
 import { SaveManager } from '../engine/SaveManager.js';
-import { checkGroups } from '../engine/CollisionSystem.js';
+import { checkGroups, aabb } from '../engine/CollisionSystem.js';
 import { createPlayer } from '../entities/Player.js';
 import { applyPowerUp } from '../entities/PowerUp.js';
 import { createMusicNote } from '../entities/MusicNote.js';
@@ -112,9 +112,19 @@ export class GameScene {
         p.bulletsToSpawn = [];
         this.#audio.playSound(p.pilotId === 'amy' ? 'laser2' : 'laser');
       }
-      // Engine trail
+      // Spawn entities (e.g. Rohan's Force Pod)
+      if (p.entitiesToSpawn?.length) {
+        p.entitiesToSpawn.forEach(e => this.#entities.add(e));
+        p.entitiesToSpawn = [];
+      }
+      // Engine trail (colour varies with Akane's mode)
       if (p.wantsTrail) {
-        this.#particles.trail(p.x + 2, p.y + p.h / 2, p.pilotId === 'akane' ? '#FF6644' : '#4466FF');
+        let trailCol = '#4466FF';
+        if (p.pilotId === 'akane') {
+          trailCol = p.akaneMode === 'battroid' ? '#882244'
+                   : p.akaneMode === 'gerwalk'  ? '#00CCAA' : '#FF6644';
+        }
+        this.#particles.trail(p.x + 2, p.y + p.h / 2, trailCol);
         p.wantsTrail = false;
       }
     }
@@ -152,6 +162,7 @@ export class GameScene {
     for (const e of this.#entities.getGroup('enemyBullet'))  e.update?.(delta);
     for (const e of this.#entities.getGroup('powerup'))      e.update?.(delta);
     for (const e of this.#entities.getGroup('musicNote'))    e.update?.(delta);
+    for (const e of this.#entities.getGroup('forcePod'))     e.update?.(delta);
     this.#particles.update(delta);
 
     // Collisions
@@ -185,7 +196,7 @@ export class GameScene {
     // Player bullets → enemies
     checkGroups(pBullets, enemies, (b, e) => {
       e.takeDamage?.(b.damage); e.hit?.();
-      b.alive = false;
+      if (!b.piercing) b.alive = false;
       if (!e.alive) {
         this.#score += e.score ?? 100;
         this.#hiScore = Math.max(this.#hiScore, this.#score);
@@ -201,7 +212,7 @@ export class GameScene {
     // Player bullets → bosses
     checkGroups(pBullets, bosses, (b, boss) => {
       boss.takeDamage?.(b.damage, b.x + b.w / 2, b.y + b.h / 2);
-      b.alive = false;
+      if (!b.piercing) b.alive = false;
       if (!boss.alive && !boss._deathHandled) {
         boss._deathHandled = true;
         this.#onBossDeath(boss);
@@ -236,6 +247,7 @@ export class GameScene {
     // Power-ups → players
     checkGroups(powerups, this.#players, (pu, p) => {
       if (!p.alive) return;
+      if (p.pilotId === 'amy') p.onPowerUpCollect?.();
       applyPowerUp(p, pu.subtype);
       pu.alive = false;
       this.#noteStats.puCount++;
@@ -254,6 +266,36 @@ export class GameScene {
       this.#audio.playSound('lifeUp');
       this.#particles.sparkle(n.x + n.w/2, n.y + n.h/2, '#FFDB00');
     });
+
+    // Rohan's Force Pod — absorbs enemy bullets (attached) / pierces enemies (flying)
+    const forcePods = this.#entities.getGroup('forcePod');
+    for (const pod of forcePods) {
+      if (!pod.alive) continue;
+      if (pod.state === 'attached') {
+        for (const b of eBullets) {
+          if (!b.alive) continue;
+          if (aabb(pod, b)) b.alive = false; // bullet absorbed by Force field
+        }
+      } else if (pod.state === 'flying') {
+        for (const target of [...enemies, ...bosses]) {
+          if (!target.alive) continue;
+          if (aabb(pod, target)) {
+            target.takeDamage?.(pod.damage);
+            if (!target.alive) {
+              this.#score += target.score ?? 100;
+              this.#hiScore = Math.max(this.#hiScore, this.#score);
+              this.#noteStats.killCount++;
+              this.#particles.explode(target.x + target.w/2, target.y + target.h/2, 1);
+              this.#audio.playSound('explosion');
+              if (target.type === 'boss' && !target._deathHandled) {
+                target._deathHandled = true;
+                this.#onBossDeath(target);
+              }
+            } else this.#audio.playSound('hit');
+          }
+        }
+      }
+    }
   }
 
   #checkNoteSpawns(scrollX) {
@@ -330,7 +372,7 @@ export class GameScene {
     drawBackground(ctx, this.#camera.scrollX, this.#loader.theme);
 
     // Entities — all positions are screen-space, draw directly
-    for (const type of ['powerup','musicNote','enemy','boss','playerBullet','player','enemyBullet']) {
+    for (const type of ['powerup','musicNote','enemy','boss','playerBullet','forcePod','player','enemyBullet']) {
       for (const e of this.#entities.getGroup(type)) {
         try {
           e.draw?.(ctx);
@@ -352,6 +394,11 @@ export class GameScene {
       bossHp: this.#bossHp,
       bossMaxHp: this.#bossMaxHp,
     });
+
+    // Pilot-specific HUD overlays
+    const p1obj = this.#players[0];
+    if (p1obj?.pilotId === 'amy' && (p1obj?.capsuleBarTimer ?? 0) > 0) this.#drawCapsuleBar(ctx, p1obj);
+    if (p1obj?.pilotId === 'akane') this.#drawAkaneMode(ctx, p1obj);
 
     // Music note found notification
     if (this.#noteNotif.timer > 0) {
@@ -400,5 +447,42 @@ export class GameScene {
       if (sel) { px(ctx, '>', GAME_W/2 - 46, y, COL.ACCENT, 6); }
       px(ctx, label, GAME_W/2 - 36, y, sel ? COL.YELLOW : COL.WHITE, 6);
     });
+  }
+
+  #drawCapsuleBar(ctx, p) {
+    const LABELS = ['SPD','MSL','DBL','LAS','OPT'];
+    const upgs = p.upgrades ?? {};
+    const active = [upgs.speed > 0, upgs.missile, upgs.double, upgs.laser, upgs.optionCount > 0];
+    const alpha = Math.min(1, (p.capsuleBarTimer ?? 0) * 2.5);
+    const boxW = 34, boxH = 12, gap = 3;
+    const bx = 4, by = GAME_H - 32;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = 'rgba(0,8,24,0.85)';
+    ctx.fillRect(bx - 2, by - 10, LABELS.length * (boxW + gap) + 2, boxH + 12);
+    px(ctx, 'CAPSULE', bx, by - 9, '#88AACC', 4);
+    for (let i = 0; i < LABELS.length; i++) {
+      const x = bx + i * (boxW + gap);
+      const isSel = i === p.capsuleSel;
+      ctx.fillStyle = isSel ? '#FFCC00' : active[i] ? '#002266' : '#111a2e';
+      ctx.fillRect(x, by, boxW, boxH);
+      ctx.strokeStyle = isSel ? '#FFFFFF' : '#446699'; ctx.lineWidth = 1;
+      ctx.strokeRect(x, by, boxW, boxH);
+      ctx.font = '5px "Press Start 2P", monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = isSel ? '#000010' : active[i] ? '#66DDFF' : '#3a5570';
+      ctx.fillText(LABELS[i], x + boxW / 2, by + boxH / 2);
+    }
+    ctx.globalAlpha = 1; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  }
+
+  #drawAkaneMode(ctx, p) {
+    const mode = (p.akaneMode ?? 'fighter').toUpperCase();
+    const cols = { FIGHTER: '#FF8844', GERWALK: '#00FFCC', BATTROID: '#FF55FF' };
+    const col = cols[mode] ?? '#FFFFFF';
+    ctx.fillStyle = 'rgba(0,8,24,0.75)'; ctx.fillRect(2, GAME_H - 22, 62, 11);
+    ctx.font = '5px "Press Start 2P", monospace';
+    ctx.fillStyle = col; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(mode, 4, GAME_H - 21);
+    ctx.textBaseline = 'top';
   }
 }
