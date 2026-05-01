@@ -12,37 +12,72 @@ let _titleBg = null;
   img.src = './assets/title_bg.webp';
 }());
 
-// ── Logo image loader (white-removal via offscreen canvas) ────────────────────
-let _logoCanvas = null;
-(function loadLogo() {
-  const img = new Image();
-  img.onload = () => {
-    // Crop away the large white margins around the text
-    // New logo: 1080x607, white bg, text centred with ~65px L/R and ~105px T/B padding
-    const CX = 55, CY = 100;
-    const CW = img.naturalWidth  - CX * 2;
-    const CH = img.naturalHeight - CY * 2;
-    const oc = document.createElement('canvas');
-    oc.width = CW; oc.height = CH;
-    const octx = oc.getContext('2d');
-    octx.drawImage(img, CX, CY, CW, CH, 0, 0, CW, CH);
-    // Make near-white pixels transparent (preserve chrome highlights)
-    const id = octx.getImageData(0, 0, CW, CH);
-    const d  = id.data;
-    for (let i = 0; i < d.length; i += 4) {
-      // Soft-edge the white removal so the cyan glow fades naturally
-      const mn = Math.min(d[i], d[i+1], d[i+2]);
-      if (mn > 248) {
-        d[i+3] = 0;
-      } else if (mn > 210) {
-        d[i+3] = Math.round(255 * (1 - (mn - 210) / 38));
-      }
-    }
-    octx.putImageData(id, 0, 0);
-    _logoCanvas = oc;
-  };
-  img.src = './assets/breach_title_logo.webp';
+// ── Protoculture Bold font loader ────────────────────────────────────────────
+let _protocultureReady = false;
+(function () {
+  const face = new FontFace('Protoculture', 'url(./assets/Protoculture-Bold.otf)');
+  face.load().then(f => { document.fonts.add(f); _protocultureReady = true; }).catch(() => {});
 }());
+
+function _drawProtocultureLogo(ctx) {
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+
+  const TARGET_W = 290;
+  const cx = GAME_W / 2;
+
+  // Auto-size BREACH to fill ~290 logical px
+  let fs = 62;
+  ctx.font = `${fs}px Protoculture`;
+  const tw = ctx.measureText('BREACH').width;
+  if (tw > 0) fs = Math.min(74, Math.round(fs * TARGET_W / tw));
+  ctx.font = `${fs}px Protoculture`;
+
+  const ty = 10 + fs;   // alphabetic baseline y
+
+  // Outer neon glow
+  ctx.shadowColor = '#00EEFF';
+  ctx.shadowBlur  = 16;
+  ctx.lineWidth   = 3;
+  ctx.strokeStyle = 'rgba(0,220,255,0.55)';
+  ctx.strokeText('BREACH', cx, ty);
+
+  // Glass gradient fill
+  const g = ctx.createLinearGradient(cx, ty - fs, cx, ty + 6);
+  g.addColorStop(0.00, '#FFFFFF');
+  g.addColorStop(0.18, '#CCFAFF');
+  g.addColorStop(0.50, '#33BBDD');
+  g.addColorStop(0.78, '#0077AA');
+  g.addColorStop(1.00, '#004466');
+  ctx.fillStyle  = g;
+  ctx.shadowBlur = 8;
+  ctx.fillText('BREACH', cx, ty);
+
+  // Specular sheen (top 45% of letters)
+  ctx.save();
+  const sh = ctx.createLinearGradient(cx, ty - fs, cx, ty - fs * 0.55);
+  sh.addColorStop(0, 'rgba(255,255,255,0.50)');
+  sh.addColorStop(1, 'rgba(255,255,255,0.00)');
+  ctx.fillStyle  = sh;
+  ctx.shadowBlur = 0;
+  ctx.fillText('BREACH', cx, ty);
+  ctx.restore();
+
+  // Subtitle — INFILTRATE THE RIFT
+  const subFs = Math.max(10, Math.round(fs * 0.21));
+  const subY  = ty + subFs + 5;
+  ctx.font = `${subFs}px Protoculture`;
+  ctx.shadowColor = '#00CCFF';
+  ctx.shadowBlur  = 5;
+  const sg = ctx.createLinearGradient(cx, subY - subFs, cx, subY);
+  sg.addColorStop(0, '#AAEEFF');
+  sg.addColorStop(1, '#0099BB');
+  ctx.fillStyle = sg;
+  ctx.fillText('INFILTRATE THE RIFT', cx, subY);
+
+  ctx.restore();
+}
 
 const ITEMS_BASE  = ['NEW GAME', 'CONTINUE', 'OPTIONS', 'EXTRAS'];
 const ITEMS_UNLOCK = ['NEW GAME', 'CONTINUE', 'OPTIONS', 'EXTRAS', 'NEW GAME +'];
@@ -138,13 +173,9 @@ export class MainMenuScene {
       drawMenuStarfield(ctx, this.#t);
     }
 
-    // Logo — image version with white stripped, fallback to drawn text
-    if (_logoCanvas) {
-      const LW = 310;
-      const LH = Math.round(_logoCanvas.height * (LW / _logoCanvas.width));
-      const LX = Math.round(GAME_W / 2 - LW / 2);
-      const LY = 2;
-      ctx.drawImage(_logoCanvas, LX, LY, LW, LH);
+    // Logo — Protoculture Bold with cyan glass effect, procedural fallback
+    if (_protocultureReady) {
+      _drawProtocultureLogo(ctx);
     } else {
       ctx.save();
       ctx.translate(GAME_W / 2, GAME_H * 0.18);
