@@ -195,15 +195,15 @@ export class MainMenuScene {
     }
 
     // Menu items — right-aligned with SNES Italic
-    const MENU_X  = GAME_W - 14;   // right-edge anchor
-    const startY  = Math.round(GAME_H * 0.51);
-    const ROW_H   = 21;
+    const MENU_X  = GAME_W - 14;
+    const startY  = Math.round(GAME_H * 0.49);
+    const ROW_H   = 27;
     const hasSave = SaveManager.hasSave();
     this.#items.forEach((item, i) => {
       const y          = startY + i * ROW_H;
       const isDisabled = item === 'CONTINUE' && !hasSave;
       const color      = isDisabled ? COL.GRAY : '#7799BB';
-      snesItem(ctx, item, MENU_X, y, i === this.#sel && !isDisabled, 11, color);
+      snesItem(ctx, item, MENU_X, y, i === this.#sel && !isDisabled, 15, color);
     });
 
     // Hold hint for NG+ — aligned to right
@@ -213,9 +213,9 @@ export class MainMenuScene {
       ctx.fillRect(MENU_X - 60, GAME_H * 0.88, barW, 2);
     }
 
-    divider(ctx, GAME_H * 0.86);
+    divider(ctx, GAME_H * 0.90);
     px(ctx, `HI-SCORE ${String(SaveManager.getHiscore()).padStart(8,'0')}`,
-       GAME_W / 2, GAME_H * 0.87, COL.YELLOW, 5, 'center');
+       GAME_W / 2, GAME_H * 0.91, COL.YELLOW, 5, 'center');
 
     // Copyright notice
     px(ctx, 'Music Composed & Copyright Elwood', GAME_W - 4, GAME_H - 5, COL.GRAY, 4, 'right');
