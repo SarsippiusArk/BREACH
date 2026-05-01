@@ -16,6 +16,29 @@ const AMY_FRAMES_SRC = [
   { sx:159, sy: 14, sw: 31, sh: 16 },
 ];
 const _amyFrameCache = []; // pre-keyed + scaled display canvases
+let   _amyHorizCache  = null; // horizontal-movement sprite (single frame)
+
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image();
+    i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/amy_horizontal.png';
+  });
+  if (!img) return;
+  const SW = 26, SH = 18, DW = 52, DH = 36;
+  const tmp = Object.assign(document.createElement('canvas'), { width: SW, height: SH });
+  const tc = tmp.getContext('2d');
+  tc.drawImage(img, 0, 0);
+  const id = tc.getImageData(0, 0, SW, SH); const d = id.data;
+  for (let i = 0; i < d.length; i += 4) {
+    if (Math.abs(d[i]-AMY_BG[0]) + Math.abs(d[i+1]-AMY_BG[1]) + Math.abs(d[i+2]-AMY_BG[2]) <= AMY_BG_TOL) d[i+3] = 0;
+  }
+  tc.putImageData(id, 0, 0);
+  const oc = Object.assign(document.createElement('canvas'), { width: DW, height: DH });
+  const c2d = oc.getContext('2d'); c2d.imageSmoothingEnabled = false;
+  c2d.drawImage(tmp, 0, 0, SW, SH, 0, 0, DW, DH);
+  _amyHorizCache = oc;
+}());
 
 (async function () {
   const img = await new Promise(res => {
@@ -52,10 +75,28 @@ const _amyFrameCache = []; // pre-keyed + scaled display canvases
 // ── TurboGrafx-16 jewel-tone palette — 3-bit per channel (0x00/24/49/6D/92/B6/DB/FF)
 // Player Ships ─────────────────────────────────────────────────────────────────
 
-/** Amy: Gradius III ship sprite (Konami 1991) — bg-keyed, pixel art 2× scaled */
-export function drawAmyShip(ctx, x, y, pal, invincible) {
+/** Amy: Gradius III ship sprite (Konami 1991) — bg-keyed, pixel art 2× scaled
+ *  @param {number} bankDir  -1 = moving left, 0 = still/up/down, 1 = moving right
+ */
+export function drawAmyShip(ctx, x, y, pal, invincible, bankDir = 0) {
   if (invincible && Math.floor(Date.now() / 80) % 2) return;
   x = Math.round(x); y = Math.round(y);
+
+  // ── Horizontal-movement sprite ─────────────────────────────────────────────
+  if (bankDir !== 0 && _amyHorizCache) {
+    const DW = 52, DH = 36;
+    const ox = x + Math.round(SHIP_W / 2 - DW / 2);
+    const oy = y + Math.round(SHIP_H / 2 - DH / 2);
+    if (bankDir < 0) {
+      ctx.save();
+      ctx.translate(ox + DW, oy); ctx.scale(-1, 1);
+      ctx.drawImage(_amyHorizCache, 0, 0, DW, DH, 0, 0, DW, DH);
+      ctx.restore();
+    } else {
+      ctx.drawImage(_amyHorizCache, 0, 0, DW, DH, ox, oy, DW, DH);
+    }
+    return;
+  }
 
   // ── Sprite sheet (5 animation frames, pre-keyed) ───────────────────────────
   if (_amyFrameCache.length > 0) {

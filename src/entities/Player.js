@@ -49,6 +49,7 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
     // Pending spawn queues (consumed by GameScene each frame)
     bulletsToSpawn:  [],
     entitiesToSpawn: [],
+    bankDir: 0,  // -1/0/1 horizontal movement direction (used by Amy's draw)
 
     // Compatibility shims (weapon systems may read/write these)
     onPowerUpCollect() { this.ws.onPowerUpCollect(this); },
@@ -69,6 +70,7 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
       if (input.isDown(pi, 'left'))  dx -= 1;
       if (input.isDown(pi, 'right')) dx += 1;
       if (dx && dy) { dx *= 0.707; dy *= 0.707; }
+      this.bankDir = dx > 0 ? 1 : dx < 0 ? -1 : 0;
       this.x = Math.max(0, Math.min(GAME_W - SHIP_W, this.x + dx * spd * delta));
       this.y = Math.max(0, Math.min(GAME_H - SHIP_H, this.y + dy * spd * delta));
       this.x = Math.min(this.x, GAME_W * 0.42);
@@ -139,7 +141,7 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
       const drawFn = DRAW_FNS[this.pilotId] ?? drawAmyShip;
 
       this.ws.drawShipPre(ctx, this);
-      drawFn(ctx, this.x, this.y, this.palette, inv);
+      drawFn(ctx, this.x, this.y, this.palette, inv, this.bankDir);
       this.ws.drawShipPost(ctx, this);
 
       if (this.chargeLevel > 0.1) {
