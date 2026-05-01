@@ -22,6 +22,14 @@ export class GameOverScene {
       this.#hiScore = score;
       SaveManager.writeHiscore(score);
     }
+    // Hidden unlock: reach 1,000,000 points (Faraday)
+    if (score >= 1000000) {
+      const unlocks = SaveManager.getUnlocks();
+      if (!unlocks.faraday) {
+        unlocks.faraday = true;
+        SaveManager.writeUnlocks(unlocks);
+      }
+    }
     if (win) {
       const save = SaveManager.getSave();
       if (level >= 8) { save.normalComplete = true; const unlocks = SaveManager.getUnlocks(); unlocks.ngplus = true; unlocks.liminae = true; SaveManager.writeUnlocks(unlocks); }

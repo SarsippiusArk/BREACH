@@ -15,9 +15,10 @@ const AMY_FRAMES_SRC = [
   { sx:124, sy: 14, sw: 31, sh: 16 },
   { sx:159, sy: 14, sw: 31, sh: 16 },
 ];
-const _amyFrameCache = []; // pre-keyed + scaled display canvases
+const _amyFrameCache  = []; // pre-keyed + scaled display canvases
 let   _amyHorizCache  = null; // horizontal-movement sprite (single frame)
 const _amyUpBankCache = []; // 2-frame upward-banking animation
+const _amyDnBankCache = []; // 2-frame downward-banking animation
 
 (async function () {
   const img = await new Promise(res => {
@@ -64,6 +65,32 @@ const _amyUpBankCache = []; // 2-frame upward-banking animation
     const c2d = oc.getContext('2d'); c2d.imageSmoothingEnabled = false;
     c2d.drawImage(tmp, 0, 0, FW, FH, 0, 0, DW, DH);
     _amyUpBankCache.push(oc);
+  }
+}());
+
+// ── Amy: downward-banking animation (2 frames, 27×17 each, no gap) ────────────
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image();
+    i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/amy_down_bank.png';
+  });
+  if (!img) return;
+  const FW = 27, FH = 17, DW = 54, DH = 34;
+  const frames = [{ sx: 0 }, { sx: FW }];
+  for (const { sx } of frames) {
+    const tmp = Object.assign(document.createElement('canvas'), { width: FW, height: FH });
+    const tc  = tmp.getContext('2d');
+    tc.drawImage(img, sx, 0, FW, FH, 0, 0, FW, FH);
+    const id = tc.getImageData(0, 0, FW, FH); const d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      if (Math.abs(d[i]-AMY_BG[0]) + Math.abs(d[i+1]-AMY_BG[1]) + Math.abs(d[i+2]-AMY_BG[2]) <= AMY_BG_TOL) d[i+3] = 0;
+    }
+    tc.putImageData(id, 0, 0);
+    const oc  = Object.assign(document.createElement('canvas'), { width: DW, height: DH });
+    const c2d = oc.getContext('2d'); c2d.imageSmoothingEnabled = false;
+    c2d.drawImage(tmp, 0, 0, FW, FH, 0, 0, DW, DH);
+    _amyDnBankCache.push(oc);
   }
 }());
 
@@ -128,13 +155,24 @@ export function drawAmyShip(ctx, x, y, pal, invincible, bankDir = 0, upPhase = 0
 
   // ── Upward-banking animation ──────────────────────────────────────────
   if (upPhase > 0.1 && _amyUpBankCache.length === 2) {
-    const fi  = upPhase >= 1.5 ? 1 : 0;   // frame 0 = slight bank, 1 = full bank
+    const fi = upPhase >= 1.5 ? 1 : 0;
     const DW = 52, DH = 40;
     const ox = x + Math.round(SHIP_W / 2 - DW / 2);
     const oy = y + Math.round(SHIP_H / 2 - DH / 2);
     ctx.drawImage(_amyUpBankCache[fi], 0, 0, DW, DH, ox, oy, DW, DH);
     return;
   }
+
+  // ── Downward-banking animation ─────────────────────────────────────────────
+  if (upPhase < -0.1 && _amyDnBankCache.length === 2) {
+    const fi = upPhase <= -1.5 ? 1 : 0;
+    const DW = 54, DH = 34;
+    const ox = x + Math.round(SHIP_W / 2 - DW / 2);
+    const oy = y + Math.round(SHIP_H / 2 - DH / 2);
+    ctx.drawImage(_amyDnBankCache[fi], 0, 0, DW, DH, ox, oy, DW, DH);
+    return;
+  }
+
   if (_amyFrameCache.length > 0) {
     const fi = Math.floor(Date.now() / 150) % _amyFrameCache.length;
     const DW = 56, DH = 29;

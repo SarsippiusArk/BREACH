@@ -67,7 +67,7 @@ export const PILOT_DATA = {
     bio: ['"Focus. Nothing else matters."', 'Four selectable weapon types.', 'SPECIAL cycles weapon slot.'],
     stats: { speed: 3, fireRate: 4, armor: 4, special: 2 },
     locked: true,
-    unlockHint: 'Beat Level 5 without dying.',
+    unlockHint: 'Strike without hesitation.',
   },
   faraday: {
     name: 'FARADAY',

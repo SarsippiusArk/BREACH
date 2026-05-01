@@ -71,15 +71,15 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
       if (input.isDown(pi, 'left'))  dx -= 1;
       if (input.isDown(pi, 'right')) dx += 1;
       if (dx && dy) { dx *= 0.707; dy *= 0.707; }
-      this.bankDir     = dx > 0 ? 1 : dx < 0 ? -1 : 0;
+      this.bankDir = dx > 0 ? 1 : dx < 0 ? -1 : 0;
 
-      // Vertical banking phase: advances when moving up, retreats otherwise
-      const BANK_RATE = 6; // phases per second (0→2 in ~0.33 s)
-      if (dy < 0) {
-        this.upBankPhase = Math.min(2, this.upBankPhase + BANK_RATE * delta);
-      } else {
-        this.upBankPhase = Math.max(0, this.upBankPhase - BANK_RATE * delta);
-      }
+      // Banking phase: +2 = full up-bank, -2 = full down-bank, 0 = neutral
+      const BANK_RATE = 6;
+      if (dy < 0)      this.upBankPhase = Math.min( 2, this.upBankPhase + BANK_RATE * delta);
+      else if (dy > 0) this.upBankPhase = Math.max(-2, this.upBankPhase - BANK_RATE * delta);
+      else             this.upBankPhase = this.upBankPhase > 0
+                         ? Math.max(0,  this.upBankPhase - BANK_RATE * delta)
+                         : Math.min(0,  this.upBankPhase + BANK_RATE * delta);
       this.x = Math.max(0, Math.min(GAME_W - SHIP_W, this.x + dx * spd * delta));
       this.y = Math.max(0, Math.min(GAME_H - SHIP_H, this.y + dy * spd * delta));
       this.x = Math.min(this.x, GAME_W * 0.42);
