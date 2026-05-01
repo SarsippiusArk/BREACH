@@ -2,6 +2,7 @@ import { GAME_W, GAME_H, PILOT_DATA } from '../constants.js';
 import {
   drawAmyShip, drawRohanShip, drawAkaneShip,
   drawShaneShip, drawFaradayShip, drawLiminaeShip,
+  drawAmyDeathAnim,
   SHIP_W, SHIP_H,
 } from '../draw/drawSprites.js';
 import { drawChargeEffect } from '../draw/drawHUD.js';
@@ -25,6 +26,7 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
 
   const player = {
     type: 'player', pilotId, playerIdx, alive: true, respawning: false,
+    deathAnimStart: 0, deathAnimCX: 0, deathAnimCY: 0,
     x: startX, y: startY, w: SHIP_W, h: SHIP_H,
 
     // Weapon system reference
@@ -130,6 +132,10 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
 
     die() {
       this.lives--;
+      // Record explosion centre before clearing position
+      this.deathAnimStart = Date.now();
+      this.deathAnimCX    = this.x + SHIP_W / 2;
+      this.deathAnimCY    = this.y + SHIP_H / 2;
       if (this.lives > 0) {
         // Use respawning flag so the entity stays in the EntityManager's list
         // (alive stays true — setting alive=false causes pruning and permanent disappearance)
@@ -148,6 +154,15 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
     },
 
     draw(ctx) {
+      // Death animation — plays for 750 ms at the explosion centre,
+      // even while respawning (replaces ship visibility for that window)
+      if (this.deathAnimStart > 0 && this.pilotId === 'amy') {
+        const ms = Date.now() - this.deathAnimStart;
+        if (ms < 750) {
+          drawAmyDeathAnim(ctx, this.deathAnimCX, this.deathAnimCY, ms);
+          return;
+        }
+      }
       if (!this.alive || this.respawning) return;
       const inv    = this.invincibleTimer > 0;
       const drawFn = DRAW_FNS[this.pilotId] ?? drawAmyShip;

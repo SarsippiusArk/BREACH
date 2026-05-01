@@ -85,6 +85,63 @@ const _amyDnBankCache = [];            // 2-frame downward-banking animation
   }
 }());
 
+// ── Amy: ship-destruction animation (5 frames, variable widths, 19px tall) ─────
+// Frame layout (source, 1×): [24px] 2px [32px] 2px [32px] 2px [32px] 2px [14px]
+// Frames: initial flash → expand → peak → fade → final spark
+const AMY_DEATH_FRAMES = [
+  { sx:   0, sw: 24, dw: 48 },
+  { sx:  26, sw: 32, dw: 64 },
+  { sx:  60, sw: 32, dw: 64 },
+  { sx:  94, sw: 32, dw: 64 },
+  { sx: 128, sw: 14, dw: 28 },
+];
+const AMY_DEATH_SH  = 19;
+const AMY_DEATH_DH  = 38;   // 2× scale
+const AMY_DEATH_MS  = 150;  // ms per frame → 750 ms total
+const _amyDeathCache = [];
+
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image();
+    i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/amy_death.png';
+  });
+  if (!img) return;
+  for (const { sx, sw, dw } of AMY_DEATH_FRAMES) {
+    const tmp = Object.assign(document.createElement('canvas'), { width: sw, height: AMY_DEATH_SH });
+    const tc  = tmp.getContext('2d');
+    tc.drawImage(img, sx, 0, sw, AMY_DEATH_SH, 0, 0, sw, AMY_DEATH_SH);
+    const id = tc.getImageData(0, 0, sw, AMY_DEATH_SH); const d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      if (Math.abs(d[i]-AMY_BG[0]) + Math.abs(d[i+1]-AMY_BG[1]) + Math.abs(d[i+2]-AMY_BG[2]) <= AMY_BG_TOL) d[i+3] = 0;
+    }
+    tc.putImageData(id, 0, 0);
+    const oc  = Object.assign(document.createElement('canvas'), { width: dw, height: AMY_DEATH_DH });
+    const c2d = oc.getContext('2d'); c2d.imageSmoothingEnabled = false;
+    c2d.drawImage(tmp, 0, 0, sw, AMY_DEATH_SH, 0, 0, dw, AMY_DEATH_DH);
+    _amyDeathCache.push(oc);
+  }
+}());
+
+/**
+ * Draw Amy's ship destruction animation at a world-space centre point.
+ * Call every frame while elapsed < AMY_DEATH_MS * FRAME_COUNT.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} cx   — ship centre x at time of death
+ * @param {number} cy   — ship centre y at time of death
+ * @param {number} ms   — milliseconds elapsed since death
+ * @returns {boolean}  true = still animating, false = animation finished
+ */
+export function drawAmyDeathAnim(ctx, cx, cy, ms) {
+  const total = AMY_DEATH_MS * AMY_DEATH_FRAMES.length;
+  if (ms >= total || _amyDeathCache.length < AMY_DEATH_FRAMES.length) return false;
+  const fi    = Math.min(AMY_DEATH_FRAMES.length - 1, Math.floor(ms / AMY_DEATH_MS));
+  const frame = _amyDeathCache[fi];
+  if (!frame) return true;
+  ctx.drawImage(frame, Math.round(cx - frame.width / 2), Math.round(cy - AMY_DEATH_DH / 2));
+  return true;
+}
+
 // ── Player Ships ──────────────────────────────────────────────────────────────
 
 /** Amy: pilot sprite — chroma-keyed, pixel art 2× scaled.
