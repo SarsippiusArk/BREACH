@@ -313,12 +313,18 @@ export class GameScene {
     const forcePods = this.#entities.getGroup('forcePod');
     for (const pod of forcePods) {
       if (!pod.alive) continue;
-      if (pod.state === 'attached') {
+
+      // All states: Force absorbs / destroys enemy bullets it overlaps
+      if (pod.state === 'attached' || pod.state === 'floating' ||
+          pod.state === 'flying'   || pod.state === 'returning') {
         for (const b of eBullets) {
           if (!b.alive) continue;
-          if (aabb(pod, b)) b.alive = false; // bullet absorbed by Force field
+          if (aabb(pod, b)) b.alive = false; // absorbed by Force field
         }
-      } else if (pod.state === 'flying') {
+      }
+
+      // When not attached: Force deals contact damage to enemies
+      if (pod.state !== 'attached') {
         for (const target of [...enemies, ...bosses]) {
           if (!target.alive) continue;
           if (aabb(pod, target)) {

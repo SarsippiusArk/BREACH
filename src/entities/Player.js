@@ -98,9 +98,15 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
       } else if (holding) {
         this.chargeTimer += delta;
         this.chargeLevel  = Math.min(this.chargeTimer / 1.2, 1);
-        this.isCharging   = this.chargeTimer > 0.25;
+        this.isCharging   = this.chargeTimer > 0.15;
+      // Auto-fire when charge bar fills (Super R-Type: fires automatically at max)
+      if (wsCanCharge && this.chargeLevel >= 1.0 && this.fireTimer <= 0) {
+        this._fire('charge');
+        this.chargeTimer = 0; this.chargeLevel = 0; this.isCharging = false;
+        this.fireTimer = 1.2; // lock-out so you can't immediately re-charge
+      }
       } else if (this.isCharging) {
-        const charged = this.chargeLevel >= 0.5;  // 50%+ triggers a charge shot
+        const charged = this.chargeLevel >= 0.2;  // any meaningful hold fires a beam
         this._fire(charged ? 'charge' : 'rapid');
         this.chargeTimer = 0; this.chargeLevel = 0; this.isCharging = false;
       } else if (input.isPressed(pi, 'fire')) {
