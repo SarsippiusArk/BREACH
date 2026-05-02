@@ -170,8 +170,14 @@ export class GameScene {
       this.#bossHp = null;
     }
 
-    // Update simple entities
-    for (const e of this.#entities.getGroup('playerBullet')) e.update?.(delta);
+    // Update simple entities — also consume any spawn queues (e.g. missile explosion)
+    for (const e of this.#entities.getGroup('playerBullet')) {
+      e.update?.(delta);
+      if (e.bulletsToSpawn?.length) {
+        e.bulletsToSpawn.forEach(b => this.#entities.add(b));
+        e.bulletsToSpawn = [];
+      }
+    }
     for (const e of this.#entities.getGroup('enemyBullet'))  e.update?.(delta);
     for (const e of this.#entities.getGroup('powerup'))      e.update?.(delta);
     for (const e of this.#entities.getGroup('musicNote'))    e.update?.(delta);
@@ -210,7 +216,10 @@ export class GameScene {
     // Player bullets → enemies
     checkGroups(pBullets, enemies, (b, e) => {
       e.takeDamage?.(b.damage); e.hit?.();
-      if (!b.piercing) b.alive = false;
+      if (!b.piercing) {
+        b.onHit?.(this.#entities);  // allow bullet to spawn follow-up (e.g. bomb shockwave)
+        b.alive = false;
+      }
       if (!e.alive) {
         this.#score += e.score ?? 100;
         this.#hiScore = Math.max(this.#hiScore, this.#score);
@@ -226,7 +235,10 @@ export class GameScene {
     // Player bullets → bosses
     checkGroups(pBullets, bosses, (b, boss) => {
       boss.takeDamage?.(b.damage, b.x + b.w / 2, b.y + b.h / 2);
-      if (!b.piercing) b.alive = false;
+      if (!b.piercing) {
+        b.onHit?.(this.#entities);
+        b.alive = false;
+      }
       if (!boss.alive && !boss._deathHandled) {
         boss._deathHandled = true;
         this.#onBossDeath(boss);

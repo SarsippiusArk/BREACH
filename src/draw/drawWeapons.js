@@ -122,6 +122,66 @@ let _mslFlySprite = null;
   _mslFlySprite = oc;
 }());
 
+// ── Amy: Bomb explosion sprite loader ─────────────────────────────────────────
+// Source: 81×18, lime-green chroma key RGB(128,255,128), 5 frames horizontal.
+// Frame specs (sx, sy, sw, sh) — extract at content dimensions, scale 2×.
+const _BOMB_FRAME_SPECS = [
+  { sx:  2, sy: 5, sw:  9, sh:  9 },   // small initial burst
+  { sx: 13, sy: 4, sw: 11, sh: 11 },   // expanding
+  { sx: 26, sy: 1, sw: 16, sh: 16 },   // full shockwave
+  { sx: 44, sy: 1, sw: 16, sh: 16 },   // sustained
+  { sx: 62, sy: 1, sw: 16, sh: 16 },   // fading out
+];
+const _bombFrames = [];
+
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image();
+    i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/amy_bomb_explosion.png';
+  });
+  if (!img) return;
+  for (const { sx, sy, sw, sh } of _BOMB_FRAME_SPECS) {
+    const dw = sw * 2, dh = sh * 2;
+    const tmp = Object.assign(document.createElement('canvas'), { width: sw, height: sh });
+    const tc  = tmp.getContext('2d');
+    tc.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+    const id = tc.getImageData(0, 0, sw, sh); const d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      if (Math.abs(d[i]-128) + Math.abs(d[i+1]-255) + Math.abs(d[i+2]-128) <= 20) d[i+3] = 0;
+    }
+    tc.putImageData(id, 0, 0);
+    const oc  = Object.assign(document.createElement('canvas'), { width: dw, height: dh });
+    const c2d = oc.getContext('2d'); c2d.imageSmoothingEnabled = false;
+    c2d.drawImage(tmp, 0, 0, sw, sh, 0, 0, dw, dh);
+    _bombFrames.push(oc);
+  }
+}());
+
+/**
+ * Draw one frame of Amy's bomb shockwave explosion.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} cx  — explosion centre x
+ * @param {number} cy  — explosion centre y
+ * @param {number} fi  — frame index 0–4
+ */
+export function drawBombExplosion(ctx, cx, cy, fi) {
+  cx = Math.round(cx); cy = Math.round(cy);
+  if (_bombFrames.length < 5) {
+    // Procedural fallback — cyan expanding ring
+    const r = 4 + fi * 4;
+    ctx.save();
+    ctx.globalAlpha = 0.85 - fi * 0.15;
+    ctx.fillStyle = '#2244FF';
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.restore();
+    return;
+  }
+  const frame = _bombFrames[fi];
+  ctx.drawImage(frame, Math.round(cx - frame.width / 2), Math.round(cy - frame.height / 2));
+}
+
 /** Amy: ground-tracking missile (fires slightly downward) */
 export function drawGroundMissile(ctx, x, y) {
   x = Math.round(x); y = Math.round(y);

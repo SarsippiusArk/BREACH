@@ -1,6 +1,7 @@
+import { GAME_H } from '../constants.js';
 import { drawPlayerBeam } from '../draw/drawSprites.js';
 import {
-  drawVulcanBullet, drawDoubleShot, drawLaserBeam, drawGroundMissile,
+  drawVulcanBullet, drawDoubleShot, drawLaserBeam, drawGroundMissile, drawBombExplosion,
   drawWaveCannon, drawMacrossMissile, drawHyperCannon,
   drawAxelayPellet, drawNapalmPod, drawSpiralBomb,
   drawDariusShot, drawZoneBomb,
@@ -112,13 +113,59 @@ export function createDoubleShot(x, y, player = 0) {
   return [make(-55), make(55)];
 }
 
-/** Ground missile: slow downward-angled missile */
+/** Ground missile: drops steeply toward the ground / enemies.
+ *  On enemy collision → GameScene calls onHit() → spawns shockwave.
+ *  On ground reach → spawns shockwave via bulletsToSpawn. */
 export function createGroundMissile(x, y, player = 0) {
   return [{
-    type: 'playerBullet', alive: true, x, y, w: 7, h: 3, player,
-    charged: false, damage: 2, vx: 240, vy: 40, age: 0, piercing: false,
-    update(d) { this.x+=this.vx*d; this.y+=this.vy*d; this.age+=d; if(this.x>520||this.y>290)this.alive=false; },
+    type: 'playerBullet', alive: true, x, y, w: 7, h: 4, player,
+    charged: false, damage: 2,
+    vx: 180, vy: 90,         // steeper drop so missile clearly hits ground
+    age: 0, piercing: false,
+    bulletsToSpawn: [],
+
+    // Called by GameScene collision handler when missile hits an enemy/boss
+    onHit(entities) {
+      for (const e of createMissileExplosion(this.x + 3, this.y + 2, this.player)) {
+        entities.add(e);
+      }
+    },
+
+    update(d) {
+      this.x += this.vx * d;
+      this.y += this.vy * d;
+      this.age += d;
+      // Ground hit — spawn explosion wave and die
+      if (this.y + this.h >= GAME_H - 6) {
+        this.bulletsToSpawn.push(...createMissileExplosion(this.x + 3, GAME_H - 10, this.player));
+        this.alive = false;
+      } else if (this.x > 520 || this.y > GAME_H + 20) {
+        this.alive = false;
+      }
+    },
     draw(ctx) { drawGroundMissile(ctx, this.x, this.y); },
+  }];
+}
+
+/** Bomb shockwave: spawned by missile on impact; travels right, piercing, animated. */
+export function createMissileExplosion(cx, cy, player = 0) {
+  const FRAME_COUNT = 5;
+  const FRAME_DUR   = 0.08;  // seconds per frame (80 ms)
+  return [{
+    type: 'playerBullet', alive: true,
+    x: Math.round(cx - 8), y: Math.round(cy - 8),
+    w: 16, h: 16, player,
+    charged: false, damage: 3,
+    vx: 200, vy: 0, age: 0, piercing: true,
+    update(d) {
+      this.x += this.vx * d;
+      this.age += d;
+      if (this.age >= FRAME_COUNT * FRAME_DUR || this.x > 520) this.alive = false;
+    },
+    draw(ctx) {
+      const fi = Math.min(FRAME_COUNT - 1, Math.floor(this.age / FRAME_DUR));
+      drawBombExplosion(ctx, this.x + 8, this.y + 8, fi);
+    },
   }];
 }
 
