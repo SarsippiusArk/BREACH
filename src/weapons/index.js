@@ -13,6 +13,7 @@ import { macross  } from './macross.js';
 import { axelay   } from './axelay.js';
 import { darius   } from './darius.js';
 import { twinbee  } from './twinbee.js';
+import { sedf     } from './sedf.js';
 
 const _fallback = new WeaponSystem();
 
@@ -23,6 +24,7 @@ const WEAPON_SYSTEMS = {
   axelay,
   darius,
   twinbee,
+  sedf,
 };
 
 /**

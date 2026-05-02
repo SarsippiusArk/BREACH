@@ -130,14 +130,9 @@ export class GameScene {
         p.entitiesToSpawn.forEach(e => this.#entities.add(e));
         p.entitiesToSpawn = [];
       }
-      // Engine trail (colour varies with Akane's mode)
+      // Engine trail — colour provided by the weapon system
       if (p.wantsTrail) {
-        let trailCol = '#4466FF';
-        if (p.pilotId === 'akane') {
-          trailCol = p.akaneMode === 'battroid' ? '#882244'
-                   : p.akaneMode === 'gerwalk'  ? '#00CCAA' : '#FF6644';
-        }
-        this.#particles.trail(p.x + 2, p.y + p.h / 2, trailCol);
+        this.#particles.trail(p.x + 2, p.y + p.h / 2, p.ws?.trailColor(p) ?? '#4466FF');
         p.wantsTrail = false;
       }
     }
@@ -226,6 +221,8 @@ export class GameScene {
         this.#score += e.score ?? 100;
         this.#hiScore = Math.max(this.#hiScore, this.#score);
         this.#noteStats.killCount++;
+        // Notify the killing player's weapon system (e.g. EDF kill-based levelling)
+        this.#players[b.player]?.ws?.onEnemyKill?.(this.#players[b.player]);
         this.#particles.explode(e.x + e.w/2, e.y + e.h/2, e.kind === 'cruiser' ? 1.5 : 1);
         this.#audio.playSound(e.kind === 'cruiser' ? 'bigExp' : 'explosion');
         // Spawn any dropped power-ups immediately

@@ -9,6 +9,7 @@ import {
   drawDariusShot, drawZoneBomb,
   drawBeanShot, drawThunderball, drawLiminaeOption,
   drawPitBeam, drawAALaser, drawAARing, drawAAUpper, drawAALower,
+  drawEDFShot, drawEDFWide, drawEDFLaser, drawEDFGravity, drawEDFHoming, drawEDFReflect,
 } from '../draw/drawWeapons.js';
 
 const BEAM_W = 8, BEAM_H = 3;
@@ -619,4 +620,141 @@ export function createPitRing(x, y, player = 0) {
     update(d) { this.x += this.vx * d; this.age += d; if (this.x > 490) this.alive = false; },
     draw(ctx) { drawAARing(ctx, this.x + _RING_W / 2, this.y + _RING_H / 2); },
   }];
+}
+
+// ── Akane — Super E.D.F. weapon factories ────────────────────────────────────
+
+/**
+ * Unified EDF bullet factory — dispatches to weapon-specific helpers.
+ * @param {string}  weapon     'SHOT'|'WIDE'|'LASER'|'HOMING'|'GRAVITY'|'REFLECT'
+ * @param {number}  x, y       spawn position
+ * @param {number}  level      1–5
+ * @param {boolean} charged
+ * @param {number}  playerIdx
+ * @param {boolean} isDrone    drone fire (50% damage, no recursive drone spawn)
+ * @param {number}  baseAng    base angle offset in degrees (drones: ±12)
+ */
+export function createEDFBullets(weapon, x, y, level, charged, playerIdx, isDrone, baseAng = 0) {
+  const dmgBonus = Math.floor((level - 1) / 2);
+  switch (weapon) {
+    case 'SHOT':    return _edfShot(x, y, level, charged, playerIdx, isDrone, baseAng, dmgBonus);
+    case 'WIDE':    return _edfWide(x, y, charged, playerIdx, isDrone, baseAng, dmgBonus);
+    case 'LASER':   return _edfLaser(x, y, charged, playerIdx, isDrone, baseAng, dmgBonus);
+    case 'HOMING':  return _edfHoming(x, y, level, charged, playerIdx, isDrone, baseAng, dmgBonus);
+    case 'GRAVITY': return _edfGravity(x, y, charged, playerIdx, isDrone, baseAng, dmgBonus);
+    case 'REFLECT': return _edfReflect(x, y, charged, playerIdx, isDrone, baseAng, dmgBonus);
+    default: return [];
+  }
+}
+
+function _edfMakeBullet(x, y, w, h, vx, vy, damage, playerIdx, charged, drawFn, extra = {}) {
+  return Object.assign({
+    type: 'playerBullet', alive: true, x, y, w, h, player: playerIdx,
+    charged, damage, vx, vy, age: 0, piercing: false,
+    update(d) {
+      this.x += this.vx * d; this.y += this.vy * d; this.age += d;
+      if (this.x > 520 || this.x < -20 || this.y < -20 || this.y > 290 || this.age > 5) this.alive = false;
+    },
+    draw(ctx) { drawFn(ctx, this.x, this.y); },
+  }, extra);
+}
+
+function _angVec(baseDeg, extraDeg = 0, speed = 350) {
+  const r = (baseDeg + extraDeg) * Math.PI / 180;
+  return { vx: Math.cos(r) * speed, vy: Math.sin(r) * speed };
+}
+
+function _edfShot(x, y, level, charged, pi, isDrone, ang, dmg) {
+  const base = 1 + dmg;
+  if (charged) {
+    return [-20, 0, 20].map(a => {
+      const { vx, vy } = _angVec(ang, a, 340);
+      return _edfMakeBullet(x, y - 1, 5, 2, vx, vy, base + 1, pi, true, (ctx, bx, by) => drawEDFShot(ctx, bx, by));
+    });
+  }
+  const count = (isDrone || level < 2) ? 1 : 2;
+  const offsets = count === 1 ? [0] : [-3, 3];
+  return offsets.map(off => {
+    const { vx, vy } = _angVec(ang, 0, 350);
+    return _edfMakeBullet(x, y + off - 1, 5, 2, vx, vy, base, pi, false, (ctx, bx, by) => drawEDFShot(ctx, bx, by));
+  });
+}
+
+function _edfWide(x, y, charged, pi, isDrone, ang, dmg) {
+  const base = 1 + dmg;
+  const fullAngles = charged ? [-44, -22, 0, 22, 44, -66, 66] : [-44, -22, 0, 22, 44];
+  const droneAngles = [-22, 0, 22];
+  const angles = isDrone ? droneAngles : fullAngles;
+  return angles.map(a => {
+    const { vx, vy } = _angVec(ang, a, 320);
+    return _edfMakeBullet(x, y - 1, 4, 2, vx, vy, base, pi, false, (ctx, bx, by) => drawEDFWide(ctx, bx, by));
+  });
+}
+
+function _edfLaser(x, y, charged, pi, isDrone, ang, dmg) {
+  const w = 5, h = charged && !isDrone ? 6 : 2;
+  const { vx, vy } = _angVec(ang, 0, 490);
+  const base = (charged ? 3 : 2) + dmg;
+  const isWide = charged && !isDrone;
+  return [Object.assign(_edfMakeBullet(x, y - Math.floor(h / 2), w, h, vx, vy, base, pi, charged,
+    (ctx, bx, by) => drawEDFLaser(ctx, bx, by, isWide)), { piercing: true })];
+}
+
+function _edfHoming(x, y, level, charged, pi, isDrone, ang, dmg) {
+  const base = 3 + dmg;
+  const count = isDrone ? 1 : (charged ? 4 : level >= 3 ? 3 : 2);
+  const spread = [-20, 0, 20, -40];
+  return Array.from({ length: count }, (_, i) => {
+    const { vx, vy } = _angVec(ang, spread[i] ?? 0, 190);
+    let target = null; // will home without target (free-flying arc)
+    return {
+      type: 'playerBullet', alive: true, x, y: y - 1, w: 8, h: 4, player: pi,
+      charged: false, damage: base, vx, vy, age: 0, piercing: false,
+      update(d) {
+        // Gentle forward homing toward screen centre-right
+        const tx = 460, ty = 135;
+        const dx = tx - this.x, dy = ty - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const turn = 180 * d;
+        this.vx += (dx / dist) * turn; this.vy += (dy / dist) * turn;
+        const spd = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+        if (spd > 260) { this.vx = this.vx / spd * 260; this.vy = this.vy / spd * 260; }
+        this.x += this.vx * d; this.y += this.vy * d; this.age += d;
+        if (this.x > 520 || this.y < -20 || this.y > 290 || this.age > 4) this.alive = false;
+      },
+      draw(ctx) { drawEDFHoming(ctx, this.x, this.y, this.vx, this.vy); },
+    };
+  });
+}
+
+function _edfGravity(x, y, charged, pi, isDrone, ang, dmg) {
+  const base = 4 + dmg;
+  const count = (isDrone || !charged) ? 1 : 3;
+  const angles = count === 3 ? [-15, 0, 15] : [0];
+  return angles.map(a => {
+    const { vx, vy } = _angVec(ang, a, 130);
+    return _edfMakeBullet(x, y - 4, 9, 9, vx, vy, base, pi, false, (ctx, bx, by) => drawEDFGravity(ctx, bx, by));
+  });
+}
+
+function _edfReflect(x, y, charged, pi, isDrone, ang, dmg) {
+  const base = 2 + dmg;
+  const count = (isDrone || !charged) ? 1 : 3;
+  const vyOffsets = count === 3 ? [-60, 0, 60] : [0];
+  return vyOffsets.map(vyOff => {
+    const { vx } = _angVec(ang, 0, 290);
+    const vy = Math.sin(ang * Math.PI / 180) * 290 + vyOff;
+    let bounces = 0;
+    return {
+      type: 'playerBullet', alive: true, x, y: y - 2, w: 5, h: 5, player: pi,
+      charged: false, damage: base, vx, vy, age: 0, piercing: false,
+      update(d) {
+        this.x += this.vx * d; this.y += this.vy * d; this.age += d;
+        if (this.y <= 2) { this.y = 2; this.vy = Math.abs(this.vy); bounces++; }
+        else if (this.y + this.h >= GAME_H - 2) { this.y = GAME_H - 2 - this.h; this.vy = -Math.abs(this.vy); bounces++; }
+        if (this.x > 520 || this.age > 4 || bounces > 4) this.alive = false;
+      },
+      draw(ctx) { drawEDFReflect(ctx, this.x, this.y); },
+    };
+  });
 }

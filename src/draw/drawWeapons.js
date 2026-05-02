@@ -989,3 +989,71 @@ export function drawAALower(ctx, cx, cy) {
     ctx.closePath(); ctx.fill();
   }
 }
+
+// ── Akane — Super E.D.F. weapon visuals ──────────────────────────────────────
+
+/** EDF SHOT — small blue-white forward bullet */
+export function drawEDFShot(ctx, x, y) {
+  x = Math.round(x); y = Math.round(y);
+  ctx.fillStyle = '#AACCFF'; ctx.fillRect(x, y, 5, 2);
+  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x + 1, y, 3, 1);
+}
+
+/** EDF WIDE — small yellow-orange spread pellet */
+export function drawEDFWide(ctx, x, y) {
+  x = Math.round(x); y = Math.round(y);
+  ctx.fillStyle = '#FFDD44'; ctx.fillRect(x, y, 4, 2);
+  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x + 1, y, 2, 1);
+}
+
+/** EDF LASER — magenta piercing beam
+ * @param {boolean} wide  true for charged (taller beam)
+ */
+export function drawEDFLaser(ctx, x, y, wide = false) {
+  x = Math.round(x); y = Math.round(y);
+  const h = wide ? 6 : 2;
+  const mid = Math.floor(h / 2);
+  ctx.save();
+  ctx.globalAlpha = 0.35;
+  ctx.fillStyle = '#FF44FF'; ctx.fillRect(x, y - 1, 5, h + 2);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#990099'; ctx.fillRect(x, y, 5, h);
+  ctx.fillStyle = '#FF88FF'; ctx.fillRect(x, y + mid - 1, 4, 2);
+  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x + 1, y + mid - 1, 2, 1);
+  ctx.restore();
+}
+
+/** EDF GRAVITY — heavy orange orb */
+export function drawEDFGravity(ctx, x, y) {
+  x = Math.round(x); y = Math.round(y);
+  ctx.save();
+  ctx.globalAlpha = 0.4;
+  ctx.fillStyle = '#FF8800'; ctx.fillRect(x - 1, y - 1, 11, 11);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#CC5500'; ctx.fillRect(x, y, 9, 9);
+  ctx.fillStyle = '#FF8800'; ctx.fillRect(x + 1, y + 1, 7, 7);
+  ctx.fillStyle = '#FFCC44'; ctx.fillRect(x + 2, y + 2, 5, 5);
+  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x + 3, y + 3, 3, 3);
+  ctx.restore();
+}
+
+/** EDF HOMING — teal tracking missile (direction-aware) */
+export function drawEDFHoming(ctx, x, y, vx = 1, vy = 0) {
+  x = Math.round(x); y = Math.round(y);
+  const angle = Math.atan2(vy, vx);
+  ctx.save();
+  ctx.translate(x + 4, y + 2);
+  ctx.rotate(angle);
+  ctx.fillStyle = '#44FFCC'; ctx.fillRect(-4, -1, 8, 3);
+  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(2, -1, 2, 3);
+  ctx.fillStyle = '#00AA88'; ctx.fillRect(-5, 0, 2, 1); // exhaust dot
+  ctx.restore();
+}
+
+/** EDF REFLECT — cyan bouncing cube */
+export function drawEDFReflect(ctx, x, y) {
+  x = Math.round(x); y = Math.round(y);
+  ctx.fillStyle = '#88FFCC'; ctx.fillRect(x, y, 5, 5);
+  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x + 1, y + 1, 2, 2);
+  ctx.fillStyle = '#00CCAA'; ctx.fillRect(x + 3, y + 3, 2, 2);
+}
