@@ -3,7 +3,7 @@ import {
   drawAmyShip, drawRohanShip, drawAkaneShip,
   drawShaneShip, drawFaradayShip, drawLiminaeShip,
   drawAmyDeathAnim, drawRohanChargeFx,
-  SHIP_W, SHIP_H,
+  SHIP_W, SHIP_H, ROHAN_NOSE_OX, ROHAN_NOSE_OY,
 } from '../draw/drawSprites.js';
 import { drawChargeEffect } from '../draw/drawHUD.js';
 import { getWeaponSystem } from '../weapons/index.js';
@@ -192,8 +192,8 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
             fxX = pod.x + pod.w;          // Force Pod right edge
             fxY = pod.y + pod.h / 2;     // Force Pod vertical centre
           } else {
-            fxX = this.x + SHIP_W;       // ship nose
-            fxY = this.y + SHIP_H / 2;
+            fxX = this.x + ROHAN_NOSE_OX; // visual ship nose (sprite extends to x+45)
+            fxY = this.y + ROHAN_NOSE_OY; // vertical centre of ship sprite
           }
           drawRohanChargeFx(ctx, fxX, fxY, this.chargeLevel);
         } else {

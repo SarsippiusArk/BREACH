@@ -3,6 +3,9 @@ import { loadAtlas, atlasFrame } from '../engine/AtlasLoader.js';
 // ── Player Ship Dimensions (collision hitboxes) ──────────────────────────────
 export const SHIP_W = 24;
 export const SHIP_H = 12;
+// Visual nose offsets from entity.x / entity.y — sprite is 66×42 centred on hitbox
+export const ROHAN_NOSE_OX = 45;   // entity.x + 45 = right edge of 66px ship sprite
+export const ROHAN_NOSE_OY = 6;    // entity.y + 6  = vertical centre of ship sprite
 
 // ── Amy sprites — chroma-key colour: RGB(128,255,128) lime green ────────────
 const AMY_BG     = [128, 255, 128];
@@ -971,19 +974,21 @@ export function drawRohanChargeFx(ctx, nx, ny, chargeLevel) {
     const frame = _rohanChargeFxCache[fi];
     ctx.save();
     ctx.globalAlpha = alpha;
+    // Left edge at nx so the sprite is entirely in front of the nose
     ctx.drawImage(frame,
-      Math.round(nx - frame.width  / 2),
+      Math.round(nx),
       Math.round(ny - frame.height / 2),
     );
     ctx.restore();
   } else {
-    // Procedural fallback — violet energy orb growing with charge level
+    // Procedural fallback — violet energy orb centred just ahead of nose
     const r   = 4 + chargeLevel * 11;
-    const grd = ctx.createRadialGradient(nx, ny, 0, nx, ny, r);
+    const cx  = nx + r;            // orb centre is one radius ahead of the nose
+    const grd = ctx.createRadialGradient(cx, ny, 0, cx, ny, r);
     grd.addColorStop(0,   `rgba(220,160,255,${alpha})`);
     grd.addColorStop(0.5, `rgba(140,60,255,${0.7 * alpha})`);
     grd.addColorStop(1,   'rgba(80,0,200,0)');
     ctx.fillStyle = grd;
-    ctx.beginPath(); ctx.arc(nx, ny, r, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, ny, r, 0, Math.PI * 2); ctx.fill();
   }
 }
