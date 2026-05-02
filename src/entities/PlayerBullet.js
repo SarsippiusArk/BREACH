@@ -1,7 +1,7 @@
 import { GAME_H } from '../constants.js';
 import { drawPlayerBeam, drawAmyBullet, drawAmyDoubleBullet } from '../draw/drawSprites.js';
 import {
-  drawVulcanBullet, drawDoubleShot, drawLaserBeam, drawGroundMissile, drawAirMissile, drawBombExplosion,
+  drawVulcanBullet, drawDoubleShot, drawLaserBeam, drawGroundMissile, drawGroundMissileAnim, drawAirMissile, drawBombExplosion,
   drawRippleBullet,
   drawWaveCannon, drawMacrossMissile, drawHyperCannon,
   drawAxelayPellet, drawNapalmPod, drawSpiralBomb,
@@ -146,7 +146,7 @@ export function createGroundMissile(x, y, player = 0) {
         this.alive = false;
       }
     },
-    draw(ctx) { drawGroundMissile(ctx, this.x, this.y); },
+    draw(ctx) { drawGroundMissileAnim(ctx, this.x, this.y, this.age); },
   }];
 }
 

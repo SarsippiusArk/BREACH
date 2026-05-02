@@ -304,6 +304,63 @@ export function drawShieldBubble(ctx, cx, cy, hpFraction, fi) {
   ctx.restore();
 }
 
+// ── Amy: Ground (downward) missile sprite loader ──────────────────────────────
+// Source: 68×13, 5 frames: sx=[0,13,26,40,54], widths=[13,13,14,14,14].
+// Same alpha-strip as air missile: black, white, lime-green, purple → transparent.
+const _GND_MSL_NEW_SPECS = [
+  { sx:  0, sw: 13 },
+  { sx: 13, sw: 13 },
+  { sx: 26, sw: 14 },
+  { sx: 40, sw: 14 },
+  { sx: 54, sw: 14 },
+];
+const _gndMslFrames = [];
+
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image();
+    i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/amy_missile_down.png';
+  });
+  if (!img) return;
+  for (const { sx, sw } of _GND_MSL_NEW_SPECS) {
+    const sh = 13;
+    const tmp = Object.assign(document.createElement('canvas'), { width: sw, height: sh });
+    const tc  = tmp.getContext('2d');
+    tc.drawImage(img, sx, 0, sw, sh, 0, 0, sw, sh);
+    const id = tc.getImageData(0, 0, sw, sh); const d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i], g = d[i+1], b = d[i+2];
+      if ((r < 16 && g < 16 && b < 16)   ||
+          (r > 240 && g > 240 && b > 240) ||
+          (Math.abs(r-128)+Math.abs(g-255)+Math.abs(b-128) <= 20) ||
+          (Math.abs(r-129)+Math.abs(g)+Math.abs(b-129) <= 30)) {
+        d[i+3] = 0;
+      }
+    }
+    tc.putImageData(id, 0, 0);
+    const oc  = Object.assign(document.createElement('canvas'), { width: sw*2, height: sh*2 });
+    const c2d = oc.getContext('2d'); c2d.imageSmoothingEnabled = false;
+    c2d.drawImage(tmp, 0, 0, sw, sh, 0, 0, sw*2, sh*2);
+    _gndMslFrames.push(oc);
+  }
+}());
+
+/** Draw one frame of Amy's downward-arcing missile, centred on (x, y). */
+export function drawGroundMissileAnim(ctx, x, y, age) {
+  x = Math.round(x); y = Math.round(y);
+  if (_gndMslFrames.length === 5) {
+    const fi    = Math.floor(age / 0.07) % 5;
+    const frame = _gndMslFrames[fi];
+    ctx.drawImage(frame, x - Math.round(frame.width / 2), y - Math.round(frame.height / 2));
+    return;
+  }
+  // Procedural fallback
+  ctx.fillStyle = '#886600'; ctx.fillRect(x, y, 7, 3);
+  ctx.fillStyle = '#FFCC00'; ctx.fillRect(x + 1, y + 1, 4, 1);
+  ctx.fillStyle = '#FF4400'; ctx.fillRect(x - 1, y + 1, 2, 1);
+}
+
 // ── Amy: Air missile sprite loader ────────────────────────────────────────────
 // Source: 64×13, 5 frames at x=[0,13,26,39,52], each 13×13 (last 12×13).
 // Mixed bg: black (background), white (header row 0), lime-green (chroma),
