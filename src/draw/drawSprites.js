@@ -366,19 +366,13 @@ const _rohanDnBankCache = [];
   }
 }());
 
-// ── Rohan: charge animation (2 frames, 65×19, split at x=0 and x=33) ──────────
+// ── Rohan: charge animation ────────────────────────────────────────────────────
+// Loader disabled — rohan_charge.png downloaded identical to rohan_down_bank.png
+// (CDN deduplication). Awaiting correct sprite from user.
+// When chargeLevel > 0.05 and cache is empty, drawRohanShip falls through to
+// the normal banking/neutral sprite, so ship remains visible while charging.
 const _rohanChargeCache = [];
-
-(async function () {
-  const img = await new Promise(res => {
-    const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null);
-    i.src = './assets/rohan_charge.png';
-  });
-  if (!img) return;
-  for (const sx of [0, 33]) {
-    _rohanChargeCache.push(_rohanChromaStrip(img, sx, 0, 32, 19));
-  }
-}());
+// loader intentionally omitted until correct sprite is provided
 
 // ── Rohan sprite atlas (Kilrathi heavy gunship — palette-swappable) ──────────
 const ROHAN_DEFAULT_PAL = ['#009200','#49DB00','#00DBDB','#FF9200'];
