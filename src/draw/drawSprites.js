@@ -958,10 +958,12 @@ export function drawLiminaeShip(ctx, x, y, pal, invincible) {
  * Rohan: charge FX overlay — composited on top of ship while wave cannon builds.
  * Call AFTER drawRohanShip. shipX/shipY = entity top-left (same as drawRohanShip args).
  */
-export function drawRohanChargeFx(ctx, shipX, shipY, chargeLevel) {
+/**
+ * nx/ny = the point in front of whatever is firing (ship nose or Force Pod front).
+ * Caller is responsible for computing the correct anchor position.
+ */
+export function drawRohanChargeFx(ctx, nx, ny, chargeLevel) {
   if (chargeLevel <= 0.05) return;
-  const nx = shipX + SHIP_W;          // ship nose X
-  const ny = shipY + SHIP_H / 2;     // ship centre Y
   const alpha = Math.min(1, 0.35 + chargeLevel * 0.65);
 
   if (_rohanChargeFxCache.length >= 2) {

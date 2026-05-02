@@ -184,7 +184,18 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
 
       if (this.chargeLevel > 0.1) {
         if (this.pilotId === 'rohan') {
-          drawRohanChargeFx(ctx, this.x, this.y, this.chargeLevel);
+          // Charge FX sits in front of the Force Pod when it is attached,
+          // otherwise in front of the ship nose.
+          const pod = this.forceRef;
+          let fxX, fxY;
+          if (pod?.alive && pod.state === 'attached') {
+            fxX = pod.x + pod.w;          // Force Pod right edge
+            fxY = pod.y + pod.h / 2;     // Force Pod vertical centre
+          } else {
+            fxX = this.x + SHIP_W;       // ship nose
+            fxY = this.y + SHIP_H / 2;
+          }
+          drawRohanChargeFx(ctx, fxX, fxY, this.chargeLevel);
         } else {
           drawChargeEffect(ctx, this.x + SHIP_W, this.y + SHIP_H / 2, this.chargeLevel);
         }
