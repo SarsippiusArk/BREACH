@@ -147,7 +147,7 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
           this.hp = this.maxHp;
           this.invincibleTimer = 3.0; // post-spawn flashing invincibility
           this.respawning = false;
-        }, 1800);
+        }, 800); // 800ms: just after Amy's 750ms death animation ends
       } else {
         this.alive = false;           // truly dead — no lives left
       }

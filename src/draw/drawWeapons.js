@@ -94,9 +94,43 @@ export function drawLaserBeam(ctx, x, y) {
   ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x + 1, y, 18, 1);
 }
 
+// ── Amy: Ground missile sprite loader ─────────────────────────────────────────
+// Source: 14×55, vertical frame layout, lime-green chroma key RGB(128,255,128).
+// Frame 0 (flying missile): sy=3, sh=4  (rows 3–6, the missile body)
+// Explosion frames 1–4 are in later rows (9-15, 18-26, 29-39, 42-52) — future use.
+let _mslFlySprite = null;
+
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image();
+    i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/amy_missile.png';
+  });
+  if (!img) return;
+  const SW = 14, SH = 4, SY = 3, DW = 28, DH = 8;
+  const tmp = Object.assign(document.createElement('canvas'), { width: SW, height: SH });
+  const tc  = tmp.getContext('2d');
+  tc.drawImage(img, 0, SY, SW, SH, 0, 0, SW, SH);
+  const id = tc.getImageData(0, 0, SW, SH); const d = id.data;
+  for (let i = 0; i < d.length; i += 4) {
+    if (Math.abs(d[i]-128) + Math.abs(d[i+1]-255) + Math.abs(d[i+2]-128) <= 20) d[i+3] = 0;
+  }
+  tc.putImageData(id, 0, 0);
+  const oc  = Object.assign(document.createElement('canvas'), { width: DW, height: DH });
+  const c2d = oc.getContext('2d'); c2d.imageSmoothingEnabled = false;
+  c2d.drawImage(tmp, 0, 0, SW, SH, 0, 0, DW, DH);
+  _mslFlySprite = oc;
+}());
+
 /** Amy: ground-tracking missile (fires slightly downward) */
 export function drawGroundMissile(ctx, x, y) {
   x = Math.round(x); y = Math.round(y);
+  if (_mslFlySprite) {
+    // 28×8 sprite centred on the 7×3 hitbox (3.5, 1.5) → top-left offset (-11, -3)
+    ctx.drawImage(_mslFlySprite, x - 11, y - 3);
+    return;
+  }
+  // Procedural fallback
   ctx.fillStyle = '#886600'; ctx.fillRect(x, y, 7, 3);
   ctx.fillStyle = '#FFCC00'; ctx.fillRect(x + 1, y + 1, 4, 1);
   ctx.fillStyle = '#FF4400'; ctx.fillRect(x - 1, y + 1, 2, 1); // exhaust
