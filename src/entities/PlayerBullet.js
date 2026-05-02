@@ -123,7 +123,7 @@ export function createGroundMissile(x, y, player = 0) {
   return [{
     type: 'playerBullet', alive: true, x, y, w: 7, h: 4, player,
     charged: false, damage: 2,
-    vx: 180, vy: 36,         // drops slowly (60% slower vertical than original)
+    vx: 0, vy: 80,          // purely vertical drop
     age: 0, piercing: false,
     bulletsToSpawn: [],
 
@@ -142,7 +142,7 @@ export function createGroundMissile(x, y, player = 0) {
       if (this.y + this.h >= GAME_H - 6) {
         this.bulletsToSpawn.push(...createMissileExplosion(this.x + 3, GAME_H - 10, this.player));
         this.alive = false;
-      } else if (this.x > 520 || this.y > GAME_H + 20) {
+      } else if (this.age > 3 || this.y > GAME_H + 20) {
         this.alive = false;
       }
     },
@@ -158,7 +158,7 @@ export function createAirMissile(x, y, player = 0) {
   return [{
     type: 'playerBullet', alive: true, x, y, w: 7, h: 4, player,
     charged: false, damage: 2,
-    vx: 180, vy: -36,
+    vx: 0, vy: -80,
     age: 0, piercing: false,
     bulletsToSpawn: [],
 
@@ -176,7 +176,7 @@ export function createAirMissile(x, y, player = 0) {
       if (this.y <= 6) {
         this.bulletsToSpawn.push(...createMissileExplosion(this.x + 3, 10, this.player));
         this.alive = false;
-      } else if (this.x > 520 || this.y < -20) {
+      } else if (this.age > 3 || this.y < -20) {
         this.alive = false;
       }
     },

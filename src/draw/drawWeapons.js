@@ -350,15 +350,19 @@ const _gndMslFrames = [];
 export function drawGroundMissileAnim(ctx, x, y, age) {
   x = Math.round(x); y = Math.round(y);
   if (_gndMslFrames.length === 5) {
-    const fi    = Math.floor(age / 0.07) % 5;
-    const frame = _gndMslFrames[fi];
-    ctx.drawImage(frame, x - Math.round(frame.width / 2), y - Math.round(frame.height / 2));
+    // Fixed frame 3 (full missile body), rotated 90° CW so nose points downward
+    const frame = _gndMslFrames[3];
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(Math.PI / 2);
+    ctx.drawImage(frame, -Math.round(frame.width / 2), -Math.round(frame.height / 2));
+    ctx.restore();
     return;
   }
-  // Procedural fallback
-  ctx.fillStyle = '#886600'; ctx.fillRect(x, y, 7, 3);
-  ctx.fillStyle = '#FFCC00'; ctx.fillRect(x + 1, y + 1, 4, 1);
-  ctx.fillStyle = '#FF4400'; ctx.fillRect(x - 1, y + 1, 2, 1);
+  // Procedural fallback — vertical dart pointing down
+  ctx.fillStyle = '#886600'; ctx.fillRect(x - 2, y - 4, 4, 8);
+  ctx.fillStyle = '#FFCC00'; ctx.fillRect(x - 1, y - 3, 2, 4);
+  ctx.fillStyle = '#FF4400'; ctx.fillRect(x - 2, y - 5, 4, 2);
 }
 
 // ── Amy: Air missile sprite loader ────────────────────────────────────────────
@@ -408,15 +412,19 @@ const _airMslFrames = [];
 export function drawAirMissile(ctx, x, y, age) {
   x = Math.round(x); y = Math.round(y);
   if (_airMslFrames.length === 5) {
-    const fi    = Math.floor(age / 0.07) % 5;
-    const frame = _airMslFrames[fi];
-    ctx.drawImage(frame, x - Math.round(frame.width / 2), y - Math.round(frame.height / 2));
+    // Fixed frame 3 (full missile body), rotated 90° CCW so nose points upward
+    const frame = _airMslFrames[3];
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(-Math.PI / 2);
+    ctx.drawImage(frame, -Math.round(frame.width / 2), -Math.round(frame.height / 2));
+    ctx.restore();
     return;
   }
-  // Procedural fallback — violet dart pointing up
-  ctx.fillStyle = '#DD88FF'; ctx.fillRect(x - 2, y - 6, 4, 10);
+  // Procedural fallback — vertical dart pointing up
+  ctx.fillStyle = '#DD88FF'; ctx.fillRect(x - 2, y - 4, 4, 8);
   ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x - 1, y - 5, 2, 4);
-  ctx.fillStyle = '#FF8800'; ctx.fillRect(x - 2, y + 3, 4, 3);
+  ctx.fillStyle = '#FF8800'; ctx.fillRect(x - 2, y + 2, 4, 2);
 }
 
 /** Amy: ground-tracking missile (fires slightly downward) */
