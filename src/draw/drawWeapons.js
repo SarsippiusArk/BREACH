@@ -472,19 +472,84 @@ export function drawOptionOrb(ctx, x, y, t = 0) {
   ctx.restore();
 }
 
-/** Rohan: Wave Cannon — wide piercing beam */
+/** Rohan: Wave Cannon — wide piercing beam (procedural fallback) */
 export function drawWaveCannon(ctx, x, y) {
   x = Math.round(x); y = Math.round(y);
-  // Outer glow
   ctx.globalAlpha = 0.35;
   ctx.fillStyle = '#00FF88'; ctx.fillRect(x, y - 8, 32, 20);
   ctx.globalAlpha = 1;
-  // Main beam body
   ctx.fillStyle = '#003322'; ctx.fillRect(x, y - 5, 32, 14);
   ctx.fillStyle = '#00AA55'; ctx.fillRect(x, y - 4, 32, 12);
   ctx.fillStyle = '#00FFAA'; ctx.fillRect(x, y - 2, 32, 8);
   ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x, y, 32, 4);
   ctx.fillStyle = '#CCFFEE'; ctx.fillRect(x + 1, y, 28, 2);
+}
+
+// ── Rohan sprite chroma-strip helper (shared by all 65×19 beam sprites) ───────
+const _RB = [163, 73, 164], _RB_TOL = 20;
+function _stripRohanBeam(img, sxArr) {
+  return sxArr.map(sx => {
+    const SW = 32, SH = 19;
+    const tmp = Object.assign(document.createElement('canvas'), { width: SW, height: SH });
+    const tc  = tmp.getContext('2d');
+    tc.drawImage(img, sx, 0, SW, SH, 0, 0, SW, SH);
+    const id = tc.getImageData(0, 0, SW, SH); const d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i], g = d[i+1], b = d[i+2];
+      if (Math.abs(r-_RB[0])+Math.abs(g-_RB[1])+Math.abs(b-_RB[2]) <= _RB_TOL
+          || (r < 15 && g < 15 && b < 15)) d[i+3] = 0;
+    }
+    tc.putImageData(id, 0, 0);
+    const oc  = Object.assign(document.createElement('canvas'), { width: SW*2, height: SH*2 });
+    const c2d = oc.getContext('2d'); c2d.imageSmoothingEnabled = false;
+    c2d.drawImage(tmp, 0, 0, SW, SH, 0, 0, SW*2, SH*2);
+    return oc;
+  });
+}
+
+// ── Rohan: Full Wave Cannon beam sprite ───────────────────────────────────────
+const _fullBeamFrames = [];
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/rohan_full_beam.png';
+  });
+  if (img) _fullBeamFrames.push(..._stripRohanBeam(img, [0, 33]));
+}());
+
+/** Draw Rohan's full-charge beam. cx/cy = sprite centre. */
+export function drawFullWaveCannon(ctx, cx, cy) {
+  cx = Math.round(cx); cy = Math.round(cy);
+  if (_fullBeamFrames.length === 2) {
+    const frame = _fullBeamFrames[Math.floor(Date.now() / 100) % 2];
+    ctx.drawImage(frame, Math.round(cx - frame.width / 2), Math.round(cy - frame.height / 2));
+    return;
+  }
+  drawWaveCannon(ctx, cx - 16, cy);
+}
+
+// ── Rohan: Wave burst / spreading shot sprite ─────────────────────────────────
+const _burstShotFrames = [];
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/rohan_burst_shot.png';
+  });
+  if (img) _burstShotFrames.push(..._stripRohanBeam(img, [0, 33]));
+}());
+
+/** Draw the burst flash or a travelling wave shot. cx/cy = centre. */
+export function drawWaveBurstShot(ctx, cx, cy) {
+  cx = Math.round(cx); cy = Math.round(cy);
+  if (_burstShotFrames.length === 2) {
+    const frame = _burstShotFrames[Math.floor(Date.now() / 100) % 2];
+    ctx.drawImage(frame, Math.round(cx - frame.width / 2), Math.round(cy - frame.height / 2));
+    return;
+  }
+  ctx.globalAlpha = 0.5; ctx.fillStyle = '#00FF88';
+  ctx.fillRect(cx - 10, cy - 4, 20, 8); ctx.globalAlpha = 1;
+  ctx.fillStyle = '#AAFFCC'; ctx.fillRect(cx - 8, cy - 2, 16, 4);
+  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(cx - 4, cy - 1, 8, 2);
 }
 
 // ── Rohan: Partial Wave Cannon sprite loader ──────────────────────────────────

@@ -3,7 +3,8 @@ import { drawPlayerBeam, drawAmyBullet, drawAmyDoubleBullet } from '../draw/draw
 import {
   drawVulcanBullet, drawDoubleShot, drawLaserBeam, drawGroundMissile, drawGroundMissileAnim, drawAirMissile, drawBombExplosion,
   drawRippleBullet,
-  drawWaveCannon, drawPartialWaveCannon, drawMacrossMissile, drawHyperCannon,
+  drawWaveCannon, drawFullWaveCannon, drawPartialWaveCannon, drawWaveBurstShot,
+  drawMacrossMissile, drawHyperCannon,
   drawAxelayPellet, drawNapalmPod, drawSpiralBomb,
   drawDariusShot, drawZoneBomb,
   drawBeanShot, drawThunderball, drawLiminaeOption,
@@ -234,6 +235,40 @@ export function createLaserBeam(x, y, player = 0) {
 
 // ── Rohan — R-Type Wave Cannon ────────────────────────────────────────────────
 
+/** Internal: stationary burst flash at the beam endpoint (visual only). */
+function _createBurstFlash(cx, cy, player) {
+  return {
+    type: 'playerBullet', alive: true,
+    x: Math.round(cx - 16), y: Math.round(cy - 9), w: 32, h: 18, player,
+    charged: false, damage: 0, vx: 0, vy: 0, age: 0, piercing: true,
+    update(d) { this.age += d; if (this.age > 0.28) this.alive = false; },
+    draw(ctx) { drawWaveBurstShot(ctx, this.x + 16, this.y + 9); },
+  };
+}
+
+/** Internal: one spreading wave shot that oscillates perpendicular to travel. */
+function _createWaveShot(cx, cy, angleDeg, player) {
+  const a = angleDeg * Math.PI / 180;
+  const spd = 200;
+  const vx = Math.cos(a) * spd, vy = Math.sin(a) * spd;
+  const px = -Math.sin(a), py = Math.cos(a);
+  return {
+    type: 'playerBullet', alive: true,
+    x: Math.round(cx), y: Math.round(cy), w: 10, h: 8, player,
+    charged: true, damage: 3, age: 0, piercing: true,
+    _bx: cx, _by: cy, _vx: vx, _vy: vy, _px: px, _py: py,
+    bulletsToSpawn: [],
+    update(d) {
+      this._bx += this._vx * d; this._by += this._vy * d; this.age += d;
+      const wave = Math.sin(this.age * 7) * 14;
+      this.x = Math.round(this._bx + this._px * wave) - 5;
+      this.y = Math.round(this._by + this._py * wave) - 4;
+      if (this.x > 520 || this.x < -30 || this.y < -30 || this.y > GAME_H + 30 || this.age > 5) this.alive = false;
+    },
+    draw(ctx) { drawWaveBurstShot(ctx, this.x + 5, this.y + 4); },
+  };
+}
+
 /** Rohan: Partial Wave Cannon — medium piercing beam (50-99% charge) */
 export function createPartialWaveCannon(x, y, player = 0) {
   return [{
@@ -244,13 +279,24 @@ export function createPartialWaveCannon(x, y, player = 0) {
   }];
 }
 
-/** Wave Cannon: massive wide piercing beam */
+/** Full Wave Cannon: 100% charge — beam travels right, then bursts into 5 wave shots. */
 export function createWaveCannon(x, y, player = 0) {
   return [{
     type: 'playerBullet', alive: true, x, y: y - 7, w: 32, h: 14, player,
     charged: true, damage: 8, vx: 300, vy: 0, age: 0, piercing: true,
-    update(d) { this.x+=this.vx*d; this.age+=d; if(this.x>520)this.alive=false; },
-    draw(ctx) { drawWaveCannon(ctx, this.x, this.y + 7); },
+    bulletsToSpawn: [], _burst: false,
+    update(d) {
+      this.x += this.vx * d; this.age += d;
+      if (!this._burst && (this.x > 445 || this.age > 3.5)) {
+        this._burst = true;
+        const cx = this.x + 16, cy = this.y + 7;
+        this.bulletsToSpawn.push(_createBurstFlash(cx, cy, this.player));
+        for (const deg of [-40, -20, 0, 20, 40])
+          this.bulletsToSpawn.push(_createWaveShot(cx, cy, deg, this.player));
+        this.alive = false;
+      }
+    },
+    draw(ctx) { drawFullWaveCannon(ctx, this.x + 16, this.y + 7); },
   }];
 }
 
