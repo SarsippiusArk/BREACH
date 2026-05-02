@@ -240,6 +240,70 @@ export function drawBombExplosion(ctx, cx, cy, fi) {
   ctx.drawImage(frame, Math.round(cx - frame.width / 2), Math.round(cy - frame.height / 2));
 }
 
+// ── Amy: Shield sprite loader ─────────────────────────────────────────────────
+// Source: 73×33.  4 frames: sx=[2,20,38,56] sy=1 sw=16 sh=32.
+// Black background — rendered with 'screen' composite so only coloured
+// energy pixels appear (black → transparent against the dark space bg).
+const _SHIELD_SPECS = [
+  { sx:  2, sy: 1, sw: 16, sh: 32 },
+  { sx: 20, sy: 1, sw: 16, sh: 32 },
+  { sx: 38, sy: 1, sw: 16, sh: 32 },
+  { sx: 56, sy: 1, sw: 16, sh: 32 },
+];
+const _shieldFrames = [];
+
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image();
+    i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/amy_shield.png';
+  });
+  if (!img) return;
+  for (const { sx, sy, sw, sh } of _SHIELD_SPECS) {
+    const dw = sw * 2, dh = sh * 2;
+    const oc  = Object.assign(document.createElement('canvas'), { width: dw, height: dh });
+    const c2d = oc.getContext('2d'); c2d.imageSmoothingEnabled = false;
+    c2d.drawImage(img, sx, sy, sw, sh, 0, 0, dw, dh);
+    _shieldFrames.push(oc);
+  }
+}());
+
+/**
+ * Draw Amy's energy shield (sits in front of the ship, shrinks as hp drains).
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} cx          — centre x (front edge of ship + a small gap)
+ * @param {number} cy          — centre y (ship mid)
+ * @param {number} hpFraction  — 0.0 – 1.0 (current / max shield HP)
+ * @param {number} fi          — animation frame index 0–3
+ */
+export function drawShieldBubble(ctx, cx, cy, hpFraction, fi) {
+  cx = Math.round(cx); cy = Math.round(cy);
+  const scale = Math.max(0.15, hpFraction);
+  fi = ((Math.floor(fi) % 4) + 4) % 4;
+
+  if (_shieldFrames.length === 4) {
+    const frame = _shieldFrames[fi];
+    const dw = Math.round(frame.width  * scale);
+    const dh = Math.round(frame.height * scale);
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.globalAlpha = 0.55 + 0.45 * hpFraction;
+    ctx.drawImage(frame, cx - Math.round(dw / 2), cy - Math.round(dh / 2), dw, dh);
+    ctx.restore();
+    return;
+  }
+  // Procedural fallback — glowing ring
+  const r = Math.max(3, Math.round(14 * scale));
+  ctx.save();
+  ctx.globalAlpha = 0.75;
+  ctx.strokeStyle = '#00CCFF'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+  ctx.globalAlpha = 0.25;
+  ctx.fillStyle = '#004488';
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
 /** Amy: ground-tracking missile (fires slightly downward) */
 export function drawGroundMissile(ctx, x, y) {
   x = Math.round(x); y = Math.round(y);

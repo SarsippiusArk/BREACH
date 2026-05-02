@@ -1,20 +1,21 @@
 import { WeaponSystem } from './WeaponSystem.js';
 import { GAME_W, GAME_H, PILOT_DATA } from '../constants.js';
 import { SHIP_W, SHIP_H } from '../draw/drawSprites.js';
-import { drawOptionOrb } from '../draw/drawWeapons.js';
+import { drawOptionOrb, drawShieldBubble } from '../draw/drawWeapons.js';
 import {
   createPlayerBullet, createDoubleShot, createGroundMissile, createAirMissile,
   createLaserBeam, createRippleBullet,
 } from '../entities/PlayerBullet.js';
 
-const LABELS = ['SPD', 'MSL', 'DBL', 'RIP', 'LAS', 'OPT'];
+const LABELS      = ['SPD', 'MSL', 'DBL', 'RIP', 'LAS', 'OPT', 'SHD'];
+const SHIELD_MAX  = 20;  // HP; bullets cost 1, ship contacts cost 2
 
 class GradiusSystem extends WeaponSystem {
   init(player) {
     player.capsuleSel      = 0;
     player.capsuleBarTimer = 0;
     player.posHistory      = [];
-    player.upgrades        = { speed: 0, missile: false, double: false, ripple: false, laser: false, optionCount: 0 };
+    player.upgrades        = { speed: 0, missile: false, double: false, ripple: false, laser: false, optionCount: 0, shield: false };
   }
 
   update(delta, player) {
@@ -62,6 +63,7 @@ class GradiusSystem extends WeaponSystem {
     else if (sel === 3) u.ripple   = true;
     else if (sel === 4) u.laser    = true;
     else if (sel === 5) u.optionCount = Math.min(u.optionCount + 1, 2);
+    else if (sel === 6) { player.shield = SHIELD_MAX; u.shield = true; }
     player.capsuleSel      = 0;
     player.capsuleBarTimer = 3.0;
   }
@@ -76,7 +78,7 @@ class GradiusSystem extends WeaponSystem {
   drawHUD(ctx, player) {
     if (!player.capsuleBarTimer || player.capsuleBarTimer <= 0) return;
     const upgs   = player.upgrades ?? {};
-    const active = [upgs.speed > 0, upgs.missile, upgs.double, upgs.ripple, upgs.laser, upgs.optionCount > 0];
+    const active = [upgs.speed > 0, upgs.missile, upgs.double, upgs.ripple, upgs.laser, upgs.optionCount > 0, upgs.shield];
     const alpha  = Math.min(1, player.capsuleBarTimer * 2.5);
     const boxW = 34, boxH = 12, gap = 3, bx = 4, by = GAME_H - 32;
     ctx.save();
@@ -103,10 +105,21 @@ class GradiusSystem extends WeaponSystem {
   drawShipPost(ctx, player) {
     const u = player.upgrades ?? {};
     const t = Date.now() * 0.001;
+    // Option orbs (trail)
     for (let i = 0; i < u.optionCount; i++) {
       const idx = Math.max(0, player.posHistory.length - 1 - 60 * (i + 1));
       const oh  = player.posHistory[idx] ?? { x: player.x, y: player.y };
       drawOptionOrb(ctx, oh.x + SHIP_W / 2 - 5, oh.y + SHIP_H / 2 - 5, t + i);
+    }
+    // Energy shield (in front of ship, shrinks as hp drains)
+    if (player.shield > 0) {
+      const fi  = Math.floor(Date.now() / 150) % 4;
+      const frac = Math.min(1, player.shield / SHIELD_MAX);
+      // cx: a few px ahead of the ship nose; cy: ship vertical centre
+      drawShieldBubble(ctx,
+        player.x + SHIP_W + 4,
+        player.y + SHIP_H / 2,
+        frac, fi);
     }
   }
 }
