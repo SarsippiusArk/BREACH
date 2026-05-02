@@ -66,12 +66,12 @@ class SEDFSystem extends WeaponSystem {
       ...createEDFBullets(weapon, bx, by, level, charged, player.playerIdx, false, 0),
     );
 
-    // Drone fire
+    // Drone fire — bullets spawn from mid-ship x, aligned with drone y centres
     for (let d = 0; d < drones; d++) {
       const dy  = d === 0
-        ? by - SHIP_H * 0.75
-        : by + SHIP_H * 0.75;
-      const ang = d === 0 ? -12 : 12;
+        ? player.y + 1   // upper drone centre
+        : player.y + 11; // lower drone centre
+      const ang = d === 0 ? -10 : 10;
       player.bulletsToSpawn.push(
         ...createEDFBullets(weapon, bx, dy, level, charged, player.playerIdx, true, ang),
       );
@@ -136,14 +136,15 @@ class SEDFSystem extends WeaponSystem {
   drawShipPost(ctx, player) {
     const drones = player.edfLevel >= 3 ? 2 : 1;
     const col    = COLORS[WEAPONS[player.edfWeapon]] ?? '#AACCFF';
-    const bx     = player.x + SHIP_W - 2;
+    // Place drones at mid-ship x, flanking the wing roots
+    const bx     = Math.round(player.x) + 9;
 
     for (let d = 0; d < drones; d++) {
-      const by = d === 0
-        ? player.y - 7
-        : player.y + SHIP_H + 1;
+      // Upper drone: centre at ship y+1 (just above top wing at y+3)
+      // Lower drone: centre at ship y+11 (just below bottom wing at y+8)
+      const by = Math.round(d === 0 ? player.y - 2 : player.y + 8);
 
-      // Small diamond drone body
+      // Small diamond drone body (6×6 diamond, centre at bx+3, by+3)
       ctx.save();
       ctx.fillStyle = col;
       ctx.beginPath();
@@ -153,8 +154,7 @@ class SEDFSystem extends WeaponSystem {
       ctx.lineTo(bx,     by + 3);
       ctx.closePath();
       ctx.fill();
-
-      // Bright core pixel
+      // Bright core
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(bx + 2, by + 2, 2, 2);
       ctx.restore();
