@@ -1,5 +1,63 @@
 // ── Weapon & bullet visuals for per-pilot weapon systems ─────────────────────
 
+// ── Amy: Ripple weapon sprite loader ──────────────────────────────────────────
+// Source: 95×50, lime-green bg. 7 expanding ring frames, left → right.
+// Each frame extracted at its content bounds and scaled 2×.
+const _RIPPLE_SPECS = [
+  { sx:  1, sy: 19, sw:  8, sh: 12 },
+  { sx: 11, sy: 17, sw: 10, sh: 16 },
+  { sx: 23, sy: 15, sw: 10, sh: 20 },
+  { sx: 35, sy: 12, sw: 12, sh: 26 },
+  { sx: 49, sy:  9, sw: 12, sh: 32 },
+  { sx: 63, sy:  5, sw: 14, sh: 40 },
+  { sx: 79, sy:  1, sw: 14, sh: 48 },
+];
+const _rippleFrames = [];
+
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image();
+    i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/amy_ripple.png';
+  });
+  if (!img) return;
+  for (const { sx, sy, sw, sh } of _RIPPLE_SPECS) {
+    const dw = sw * 2, dh = sh * 2;
+    const tmp = Object.assign(document.createElement('canvas'), { width: sw, height: sh });
+    const tc  = tmp.getContext('2d');
+    tc.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+    const id = tc.getImageData(0, 0, sw, sh); const d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      if (Math.abs(d[i]-128) + Math.abs(d[i+1]-255) + Math.abs(d[i+2]-128) <= 20) d[i+3] = 0;
+    }
+    tc.putImageData(id, 0, 0);
+    const oc  = Object.assign(document.createElement('canvas'), { width: dw, height: dh });
+    const c2d = oc.getContext('2d'); c2d.imageSmoothingEnabled = false;
+    c2d.drawImage(tmp, 0, 0, sw, sh, 0, 0, dw, dh);
+    _rippleFrames.push(oc);
+  }
+}());
+
+/**
+ * Draw one frame of Amy's Ripple weapon — centred on (cx, cy).
+ * @param {number} fi  frame index 0–6 (small → large)
+ */
+export function drawRippleBullet(ctx, cx, cy, fi) {
+  cx = Math.round(cx); cy = Math.round(cy);
+  if (_rippleFrames.length < 7) {
+    // Procedural fallback — teal ring
+    const r = 4 + fi * 5;
+    ctx.save();
+    ctx.globalAlpha = 0.85;
+    ctx.strokeStyle = '#00CCFF'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+    return;
+  }
+  const frame = _rippleFrames[fi];
+  ctx.drawImage(frame, Math.round(cx - frame.width / 2), Math.round(cy - frame.height / 2));
+}
+
 // ── Amy: Option orb sprite loader ────────────────────────────────────────────
 // Source: 38×27, lime-green chroma key RGB(128,255,128)
 // 3 frames (ping-pong 0→1→2→1): small (8px) → medium (10px) → large (12px)

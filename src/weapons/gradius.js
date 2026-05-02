@@ -3,17 +3,18 @@ import { GAME_W, GAME_H, PILOT_DATA } from '../constants.js';
 import { SHIP_W, SHIP_H } from '../draw/drawSprites.js';
 import { drawOptionOrb } from '../draw/drawWeapons.js';
 import {
-  createPlayerBullet, createDoubleShot, createGroundMissile, createLaserBeam,
+  createPlayerBullet, createDoubleShot, createGroundMissile, createAirMissile,
+  createLaserBeam, createRippleBullet,
 } from '../entities/PlayerBullet.js';
 
-const LABELS = ['SPD', 'MSL', 'DBL', 'LAS', 'OPT'];
+const LABELS = ['SPD', 'MSL', 'DBL', 'RIP', 'LAS', 'OPT'];
 
 class GradiusSystem extends WeaponSystem {
   init(player) {
     player.capsuleSel      = 0;
     player.capsuleBarTimer = 0;
     player.posHistory      = [];
-    player.upgrades        = { speed: 0, missile: false, double: false, laser: false, optionCount: 0 };
+    player.upgrades        = { speed: 0, missile: false, double: false, ripple: false, laser: false, optionCount: 0 };
   }
 
   update(delta, player) {
@@ -29,19 +30,26 @@ class GradiusSystem extends WeaponSystem {
     } else {
       if (u.laser) {
         player.bulletsToSpawn.push(...createLaserBeam(bx, by, player.playerIdx));
+      } else if (u.ripple) {
+        player.bulletsToSpawn.push(...createRippleBullet(bx, by, player.playerIdx));
+        if (u.double) player.bulletsToSpawn.push(...createDoubleShot(bx, by, player.playerIdx));
       } else {
         player.bulletsToSpawn.push(...createPlayerBullet(bx, by, 'amy', false, player.playerIdx));
         if (u.double) player.bulletsToSpawn.push(...createDoubleShot(bx, by, player.playerIdx));
       }
-      if (u.missile) player.bulletsToSpawn.push(...createGroundMissile(bx, by + 4, player.playerIdx));
+      if (u.missile) {
+        player.bulletsToSpawn.push(...createGroundMissile(bx, by + 4, player.playerIdx));
+        player.bulletsToSpawn.push(...createAirMissile(bx, by - 4, player.playerIdx));
+      }
     }
     // Option orbs also fire
     for (let i = 0; i < u.optionCount; i++) {
       const idx = Math.max(0, player.posHistory.length - 1 - 60 * (i + 1));
       const oh  = player.posHistory[idx] ?? { x: player.x, y: player.y };
       const ox = oh.x + SHIP_W, oy = oh.y + SHIP_H / 2;
-      if (u.laser) player.bulletsToSpawn.push(...createLaserBeam(ox, oy, player.playerIdx));
-      else         player.bulletsToSpawn.push(...createPlayerBullet(ox, oy, 'amy', false, player.playerIdx));
+      if (u.laser)       player.bulletsToSpawn.push(...createLaserBeam(ox, oy, player.playerIdx));
+      else if (u.ripple) player.bulletsToSpawn.push(...createRippleBullet(ox, oy, player.playerIdx));
+      else               player.bulletsToSpawn.push(...createPlayerBullet(ox, oy, 'amy', false, player.playerIdx));
     }
   }
 
@@ -51,8 +59,9 @@ class GradiusSystem extends WeaponSystem {
     if      (sel === 0) player.baseSpeed = Math.min(player.baseSpeed + 20, PILOT_DATA.amy.speed + 60);
     else if (sel === 1) u.missile  = true;
     else if (sel === 2) u.double   = true;
-    else if (sel === 3) u.laser    = true;
-    else if (sel === 4) u.optionCount = Math.min(u.optionCount + 1, 2);
+    else if (sel === 3) u.ripple   = true;
+    else if (sel === 4) u.laser    = true;
+    else if (sel === 5) u.optionCount = Math.min(u.optionCount + 1, 2);
     player.capsuleSel      = 0;
     player.capsuleBarTimer = 3.0;
   }
@@ -67,7 +76,7 @@ class GradiusSystem extends WeaponSystem {
   drawHUD(ctx, player) {
     if (!player.capsuleBarTimer || player.capsuleBarTimer <= 0) return;
     const upgs   = player.upgrades ?? {};
-    const active = [upgs.speed > 0, upgs.missile, upgs.double, upgs.laser, upgs.optionCount > 0];
+    const active = [upgs.speed > 0, upgs.missile, upgs.double, upgs.ripple, upgs.laser, upgs.optionCount > 0];
     const alpha  = Math.min(1, player.capsuleBarTimer * 2.5);
     const boxW = 34, boxH = 12, gap = 3, bx = 4, by = GAME_H - 32;
     ctx.save();

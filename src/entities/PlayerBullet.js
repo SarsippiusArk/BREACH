@@ -2,6 +2,7 @@ import { GAME_H } from '../constants.js';
 import { drawPlayerBeam, drawAmyBullet, drawAmyDoubleBullet } from '../draw/drawSprites.js';
 import {
   drawVulcanBullet, drawDoubleShot, drawLaserBeam, drawGroundMissile, drawBombExplosion,
+  drawRippleBullet,
   drawWaveCannon, drawMacrossMissile, drawHyperCannon,
   drawAxelayPellet, drawNapalmPod, drawSpiralBomb,
   drawDariusShot, drawZoneBomb,
@@ -150,6 +151,39 @@ export function createGroundMissile(x, y, player = 0) {
   }];
 }
 
+/** Air missile: arcs upward toward ceiling / enemies.
+ *  Mirror of createGroundMissile but fires upward (vy:-90).
+ *  On enemy collision → GameScene calls onHit() → spawns shockwave.
+ *  On ceiling reach   → spawns shockwave via bulletsToSpawn. */
+export function createAirMissile(x, y, player = 0) {
+  return [{
+    type: 'playerBullet', alive: true, x, y, w: 7, h: 4, player,
+    charged: false, damage: 2,
+    vx: 180, vy: -90,
+    age: 0, piercing: false,
+    bulletsToSpawn: [],
+
+    onHit(entities) {
+      for (const e of createMissileExplosion(this.x + 3, this.y + 2, this.player)) {
+        entities.add(e);
+      }
+    },
+
+    update(d) {
+      this.x += this.vx * d;
+      this.y += this.vy * d;
+      this.age += d;
+      if (this.y <= 6) {
+        this.bulletsToSpawn.push(...createMissileExplosion(this.x + 3, 10, this.player));
+        this.alive = false;
+      } else if (this.x > 520 || this.y < -20) {
+        this.alive = false;
+      }
+    },
+    draw(ctx) { drawGroundMissile(ctx, this.x, this.y); },
+  }];
+}
+
 /** Bomb shockwave: spawned by missile on impact; travels right, piercing, animated. */
 export function createMissileExplosion(cx, cy, player = 0) {
   const FRAME_COUNT = 5;
@@ -168,6 +202,22 @@ export function createMissileExplosion(cx, cy, player = 0) {
     draw(ctx) {
       const fi = Math.min(FRAME_COUNT - 1, Math.floor(this.age / FRAME_DUR));
       drawBombExplosion(ctx, this.x + 8, this.y + 8, fi);
+    },
+  }];
+}
+
+/** Amy: Ripple weapon — expanding ring, piercing, loops animation while in flight. */
+export function createRippleBullet(x, y, player = 0) {
+  const FRAME_COUNT = 7, FRAME_DUR = 0.07; // 70 ms/frame → full cycle 490 ms
+  return [{
+    type: 'playerBullet', alive: true,
+    x, y: y - 12, w: 8, h: 24, player,
+    charged: false, damage: 2, vx: 260, vy: 0,
+    age: 0, piercing: true,
+    update(d) { this.x += this.vx * d; this.age += d; if (this.x > 520) this.alive = false; },
+    draw(ctx) {
+      const fi = Math.floor(this.age / FRAME_DUR) % FRAME_COUNT;
+      drawRippleBullet(ctx, this.x + 4, this.y + 12, fi);
     },
   }];
 }
