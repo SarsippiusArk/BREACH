@@ -8,7 +8,7 @@ import {
   drawAxelayPellet, drawNapalmPod, drawSpiralBomb,
   drawDariusShot, drawZoneBomb,
   drawBeanShot, drawThunderball, drawLiminaeOption,
-  drawPitBeam, drawAALaser, drawAARing, drawAAUpper,
+  drawPitBeam, drawAALaser, drawAARing, drawAAUpper, drawAALower,
 } from '../draw/drawWeapons.js';
 
 const BEAM_W = 8, BEAM_H = 3;
@@ -592,6 +592,20 @@ export function createPitUpperShot(x, y, player = 0) {
     charged: false, damage: 2, vx: 320, vy: 0, age: 0, piercing: false,
     update(d) { this.x += this.vx * d; this.age += d; if (this.x > 490) this.alive = false; },
     draw(ctx) { drawAAUpper(ctx, this.x + _UPPER_W / 2, this.y + _UPPER_H / 2); },
+  }];
+}
+
+// ── Anti-Air Lower Pit beam — directional arrows shot from the bottom pit ────
+const _LOWER_W = 34, _LOWER_H = 8;   // hitbox inside the 38×12 display
+
+export function createPitLowerShot(x, y, player = 0) {
+  return [{
+    type: 'playerBullet', alive: true,
+    x: x - _LOWER_W / 2, y: y - _LOWER_H / 2,
+    w: _LOWER_W, h: _LOWER_H, player,
+    charged: false, damage: 2, vx: 320, vy: 0, age: 0, piercing: false,
+    update(d) { this.x += this.vx * d; this.age += d; if (this.x > 490) this.alive = false; },
+    draw(ctx) { drawAALower(ctx, this.x + _LOWER_W / 2, this.y + _LOWER_H / 2); },
   }];
 }
 const _RING_W = 16, _RING_H = 16;  // collision hitbox (inside the 22×22 display)

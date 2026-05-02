@@ -1,7 +1,7 @@
 import { WeaponSystem } from './WeaponSystem.js';
 import { SHIP_W, SHIP_H } from '../draw/drawSprites.js';
 import { drawForcePod } from '../draw/drawWeapons.js';
-import { createPlayerBullet, createPartialWaveCannon, createWaveCannon, createAntiAirLaser, createPitRing, createPitUpperShot } from '../entities/PlayerBullet.js';
+import { createPlayerBullet, createPartialWaveCannon, createWaveCannon, createAntiAirLaser, createPitRing, createPitUpperShot, createPitLowerShot } from '../entities/PlayerBullet.js';
 import { createShipPit } from '../entities/ShipPit.js';
 
 // ── Force Pod entity ──────────────────────────────────────────────────────────
@@ -112,7 +112,7 @@ class RTypeSystem extends WeaponSystem {
         const pb = player.pitBottom;
         const pt = player.pitTop;
         player.bulletsToSpawn.push(...createAntiAirLaser(bx, by, player.playerIdx));
-        if (pb?.alive) player.bulletsToSpawn.push(...createPitRing(pb.x + 14, pb.y + 6, player.playerIdx));
+        if (pb?.alive) player.bulletsToSpawn.push(...createPitLowerShot(pb.x + 14, pb.y + 6, player.playerIdx));
         if (pt?.alive) player.bulletsToSpawn.push(...createPitUpperShot(pt.x + 14, pt.y + 6, player.playerIdx));
         return;
       }
