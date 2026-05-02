@@ -507,11 +507,32 @@ function _stripRohanBeam(img, sxArr) {
   });
 }
 
-// ── Rohan: Full Wave Cannon beam sprite ───────────────────────────────────────
-// Sprite loader disabled — awaiting correct asset (previous upload was identical
-// to rohan_down_bank.png due to CDN deduplication).
+// ── Rohan: Full Wave Cannon beam sprite (82×41, 2 frames at 41×41) ───────────
+// Purple chroma (163,73,164) tol=20 + black stripped. Displayed at 1× (already
+// game-resolution — no upscale needed).
 const _fullBeamFrames = [];
-// loader intentionally omitted until correct sprite is provided
+
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/rohan_full_beam.png';
+  });
+  if (!img) return;
+  for (const sx of [0, 41]) {
+    const SW = 41, SH = 41;
+    const oc = Object.assign(document.createElement('canvas'), { width: SW, height: SH });
+    const c2d = oc.getContext('2d');
+    c2d.drawImage(img, sx, 0, SW, SH, 0, 0, SW, SH);
+    const id = c2d.getImageData(0, 0, SW, SH); const d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i], g = d[i+1], b = d[i+2];
+      if (Math.abs(r-163)+Math.abs(g-73)+Math.abs(b-164) <= 20
+          || (r < 15 && g < 15 && b < 15)) d[i+3] = 0;
+    }
+    c2d.putImageData(id, 0, 0);
+    _fullBeamFrames.push(oc);
+  }
+}());
 
 /** Draw Rohan's full-charge beam. cx/cy = sprite centre. */
 export function drawFullWaveCannon(ctx, cx, cy) {
@@ -524,10 +545,31 @@ export function drawFullWaveCannon(ctx, cx, cy) {
   drawWaveCannon(ctx, cx - 16, cy);
 }
 
-// ── Rohan: Wave burst / spreading shot sprite ─────────────────────────────────
-// Sprite loader disabled — awaiting correct asset.
+// ── Rohan: Wave burst / spreading shot sprite (55×30, 2 frames at 27×30) ─────
+// Layout: frame0 at x=0, frame1 at x=28 (1px separator between them).
 const _burstShotFrames = [];
-// loader intentionally omitted until correct sprite is provided
+
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/rohan_burst_shot.png';
+  });
+  if (!img) return;
+  for (const sx of [0, 28]) {
+    const SW = 27, SH = 30;
+    const oc = Object.assign(document.createElement('canvas'), { width: SW, height: SH });
+    const c2d = oc.getContext('2d');
+    c2d.drawImage(img, sx, 0, SW, SH, 0, 0, SW, SH);
+    const id = c2d.getImageData(0, 0, SW, SH); const d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i], g = d[i+1], b = d[i+2];
+      if (Math.abs(r-163)+Math.abs(g-73)+Math.abs(b-164) <= 20
+          || (r < 15 && g < 15 && b < 15)) d[i+3] = 0;
+    }
+    c2d.putImageData(id, 0, 0);
+    _burstShotFrames.push(oc);
+  }
+}());
 
 /** Draw the burst flash or a travelling wave shot. cx/cy = centre. */
 export function drawWaveBurstShot(ctx, cx, cy) {
