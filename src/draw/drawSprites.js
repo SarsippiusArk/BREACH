@@ -352,6 +352,20 @@ const _rohanUpBankCache = [];
   }
 }());
 
+// ── Rohan: down-banking animation (2 frames, 65×19, split at x=33) ───────────
+const _rohanDnBankCache = [];
+
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/rohan_down_bank.png';
+  });
+  if (!img) return;
+  for (const sx of [0, 33]) {
+    _rohanDnBankCache.push(_rohanChromaStrip(img, sx, 0, 32, 19));
+  }
+}());
+
 // ── Rohan sprite atlas (Kilrathi heavy gunship — palette-swappable) ──────────
 const ROHAN_DEFAULT_PAL = ['#009200','#49DB00','#00DBDB','#FF9200'];
 let _kilrathiSheet = null;
@@ -428,6 +442,16 @@ export function drawRohanShip(ctx, x, y, pal, invincible, bankDir = 0, upPhase =
   if (upPhase > 0.1 && _rohanUpBankCache.length === 2) {
     const fi    = upPhase >= 1.5 ? 1 : 0;
     const frame = _rohanUpBankCache[fi];
+    const ox = x + Math.round(SHIP_W / 2 - frame.width  / 2);
+    const oy = y + Math.round(SHIP_H / 2 - frame.height / 2);
+    ctx.drawImage(frame, ox, oy);
+    return;
+  }
+
+  // ── Banking down ──────────────────────────────────────────────────────────
+  if (upPhase < -0.1 && _rohanDnBankCache.length === 2) {
+    const fi    = upPhase <= -1.5 ? 1 : 0;
+    const frame = _rohanDnBankCache[fi];
     const ox = x + Math.round(SHIP_W / 2 - frame.width  / 2);
     const oy = y + Math.round(SHIP_H / 2 - frame.height / 2);
     ctx.drawImage(frame, ox, oy);
