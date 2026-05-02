@@ -8,7 +8,7 @@ import {
   drawAxelayPellet, drawNapalmPod, drawSpiralBomb,
   drawDariusShot, drawZoneBomb,
   drawBeanShot, drawThunderball, drawLiminaeOption,
-  drawPitBeam, drawAALaser, drawAARing,
+  drawPitBeam, drawAALaser, drawAARing, drawAAUpper,
 } from '../draw/drawWeapons.js';
 
 const BEAM_W = 8, BEAM_H = 3;
@@ -581,7 +581,19 @@ export function createAntiAirLaser(x, y, player = 0) {
   }];
 }
 
-// ── Anti-Air Ring — single ring fired from each equipped pit ─────────────────
+// ── Anti-Air Upper Pit beam — directional arrows shot from the top pit ───────
+const _UPPER_W = 25, _UPPER_H = 12;  // hitbox inside the 29×18 display
+
+export function createPitUpperShot(x, y, player = 0) {
+  return [{
+    type: 'playerBullet', alive: true,
+    x: x - _UPPER_W / 2, y: y - _UPPER_H / 2,
+    w: _UPPER_W, h: _UPPER_H, player,
+    charged: false, damage: 2, vx: 320, vy: 0, age: 0, piercing: false,
+    update(d) { this.x += this.vx * d; this.age += d; if (this.x > 490) this.alive = false; },
+    draw(ctx) { drawAAUpper(ctx, this.x + _UPPER_W / 2, this.y + _UPPER_H / 2); },
+  }];
+}
 const _RING_W = 16, _RING_H = 16;  // collision hitbox (inside the 22×22 display)
 
 export function createPitRing(x, y, player = 0) {

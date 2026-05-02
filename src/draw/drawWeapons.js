@@ -886,14 +886,17 @@ export function drawPitBeam(ctx, x, y, colour) {
 
 // ── Rohan: Anti-Air Laser sprites ────────────────────────────────────────────
 // rohan_aa_laser.png  77×46 — double ring (main shot)  displayed at 40×24
-// rohan_aa_ring.png   57×56 — single ring (pit shot)   displayed at 22×22
+// rohan_aa_ring.png   57×56 — single ring (lower pit)  displayed at 22×22
+// rohan_aa_upper.png  29×18 — directional beam (upper pit) displayed at 29×18
 // Green chroma RGB(34,177,76) tol=30 + black stripped.
 //
 // DW/DH = display size stored in the off-screen canvas.
 const _RING_DW = 22, _RING_DH = 22;
 const _LASER_DW = 40, _LASER_DH = 24;
+const _UPPER_DW = 29, _UPPER_DH = 18;
 let _aaRingFrame  = null;
 let _aaLaserFrame = null;
+let _aaUpperFrame = null;
 
 (async function () {
   function _loadAA(src, sw, sh, dw, dh, setter) {
@@ -919,6 +922,7 @@ let _aaLaserFrame = null;
   }
   _loadAA('./assets/rohan_aa_laser.png', 77, 46, _LASER_DW, _LASER_DH, f => { _aaLaserFrame = f; });
   _loadAA('./assets/rohan_aa_ring.png',  57, 56, _RING_DW,  _RING_DH,  f => { _aaRingFrame  = f; });
+  _loadAA('./assets/rohan_aa_upper.png', 29, 18, _UPPER_DW, _UPPER_DH, f => { _aaUpperFrame = f; });
 }());
 
 /** Draw the double-ring anti-air laser shot, centred on (cx, cy). */
@@ -947,4 +951,21 @@ export function drawAARing(ctx, cx, cy) {
   ctx.beginPath(); ctx.ellipse(cx, cy - 3, 8, 4, 0, 0, Math.PI); ctx.stroke();
   ctx.strokeStyle = '#FF3322';
   ctx.beginPath(); ctx.ellipse(cx, cy + 3, 8, 4, 0, Math.PI, 0); ctx.stroke();
+}
+
+/** Draw the upper-pit directional beam shot, centred on (cx, cy). */
+export function drawAAUpper(ctx, cx, cy) {
+  cx = Math.round(cx); cy = Math.round(cy);
+  if (_aaUpperFrame) {
+    ctx.drawImage(_aaUpperFrame, cx - (_UPPER_DW >> 1), cy - (_UPPER_DH >> 1));
+    return;
+  }
+  // Procedural fallback: blue chevron arrows
+  ctx.fillStyle = '#33BBFF';
+  for (let i = 0; i < 3; i++) {
+    const ox = cx - 10 + i * 9;
+    ctx.beginPath();
+    ctx.moveTo(ox, cy - 4); ctx.lineTo(ox + 6, cy); ctx.lineTo(ox, cy + 4);
+    ctx.closePath(); ctx.fill();
+  }
 }
