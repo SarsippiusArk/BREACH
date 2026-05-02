@@ -305,6 +305,41 @@ export function drawAmyShip(ctx, x, y, pal, invincible, bankDir = 0, upPhase = 0
   ctx.fillRect(x+22, y+3, 2, 1); ctx.fillRect(x+22, y+8, 2, 1);
 }
 
+// ── Rohan: neutral-flight sprite ─────────────────────────────────────────────
+// Source: 33×21, purple chroma RGB(163,73,164) tol=20, black bg stripped,
+// scaled 2× → 66×42 display.
+const ROHAN_BG     = [163, 73, 164];
+const ROHAN_BG_TOL = 20;
+let   _rohanHSprite = null;
+
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image();
+    i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/rohan_horizontal.png';
+  });
+  if (!img) return;
+  const SW = 33, SH = 21, DW = SW * 2, DH = SH * 2;
+  const tmp = Object.assign(document.createElement('canvas'), { width: SW, height: SH });
+  const tc  = tmp.getContext('2d');
+  tc.drawImage(img, 0, 0);
+  const id = tc.getImageData(0, 0, SW, SH); const d = id.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i], g = d[i+1], b = d[i+2];
+    // Remove purple chroma key
+    if (Math.abs(r-ROHAN_BG[0]) + Math.abs(g-ROHAN_BG[1]) + Math.abs(b-ROHAN_BG[2]) <= ROHAN_BG_TOL) {
+      d[i+3] = 0; continue;
+    }
+    // Remove solid black background (not ship outline — ship body has colour)
+    if (r < 15 && g < 15 && b < 15) { d[i+3] = 0; }
+  }
+  tc.putImageData(id, 0, 0);
+  const oc  = Object.assign(document.createElement('canvas'), { width: DW, height: DH });
+  const c2d = oc.getContext('2d'); c2d.imageSmoothingEnabled = false;
+  c2d.drawImage(tmp, 0, 0, SW, SH, 0, 0, DW, DH);
+  _rohanHSprite = oc;
+}());
+
 // ── Rohan sprite atlas (Kilrathi heavy gunship — palette-swappable) ──────────
 const ROHAN_DEFAULT_PAL = ['#009200','#49DB00','#00DBDB','#FF9200'];
 let _kilrathiSheet = null;
@@ -372,12 +407,21 @@ function _kilrathiFrame(anim, frameIdx, pal) {
   return oc;
 }
 
-/** Rohan: Kilrathi heavy gunship — palette-swappable atlas, procedural fallback */
+/** Rohan: ship sprite — purple chroma-keyed, 2× scaled. */
 export function drawRohanShip(ctx, x, y, pal, invincible) {
   if (invincible && Math.floor(Date.now() / 80) % 2) return;
   x = Math.round(x); y = Math.round(y);
 
-  // ── Sprite atlas path (palette-swapped per frame) ─────────────────────────
+  // ── New pixel-art sprite (primary) ───────────────────────────────────────
+  if (_rohanHSprite) {
+    const DW = _rohanHSprite.width, DH = _rohanHSprite.height; // 66 × 42
+    const ox = x + Math.round(SHIP_W / 2 - DW / 2);
+    const oy = y + Math.round(SHIP_H / 2 - DH / 2);
+    ctx.drawImage(_rohanHSprite, ox, oy);
+    return;
+  }
+
+  // ── Kilrathi atlas (secondary fallback) ──────────────────────────────────
   if (_kilrathiSheet) {
     const frameIdx = Math.floor(Date.now() / 120) % 8;
     const frame = _kilrathiFrame('fly_straight', frameIdx, pal);
