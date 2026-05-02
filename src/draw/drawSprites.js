@@ -366,6 +366,20 @@ const _rohanDnBankCache = [];
   }
 }());
 
+// ── Rohan: charge animation (2 frames, 65×19, split at x=0 and x=33) ──────────
+const _rohanChargeCache = [];
+
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/rohan_charge.png';
+  });
+  if (!img) return;
+  for (const sx of [0, 33]) {
+    _rohanChargeCache.push(_rohanChromaStrip(img, sx, 0, 32, 19));
+  }
+}());
+
 // ── Rohan sprite atlas (Kilrathi heavy gunship — palette-swappable) ──────────
 const ROHAN_DEFAULT_PAL = ['#009200','#49DB00','#00DBDB','#FF9200'];
 let _kilrathiSheet = null;
@@ -433,10 +447,21 @@ function _kilrathiFrame(anim, frameIdx, pal) {
   return oc;
 }
 
-/** Rohan: ship sprite — purple chroma-keyed, 2× scaled, banking-aware. */
-export function drawRohanShip(ctx, x, y, pal, invincible, bankDir = 0, upPhase = 0) {
+/** Rohan: ship sprite — purple chroma-keyed, 2× scaled, banking-aware.
+ *  @param {number} chargeLevel  0–1: > 0.05 triggers the charge-up sprite loop. */
+export function drawRohanShip(ctx, x, y, pal, invincible, bankDir = 0, upPhase = 0, chargeLevel = 0) {
   if (invincible && Math.floor(Date.now() / 80) % 2) return;
   x = Math.round(x); y = Math.round(y);
+
+  // ── Charge animation (highest priority while building wave cannon) ────────
+  if (chargeLevel > 0.05 && _rohanChargeCache.length === 2) {
+    const fi    = Math.floor(Date.now() / 100) % 2;
+    const frame = _rohanChargeCache[fi];
+    const ox = x + Math.round(SHIP_W / 2 - frame.width  / 2);
+    const oy = y + Math.round(SHIP_H / 2 - frame.height / 2);
+    ctx.drawImage(frame, ox, oy);
+    return;
+  }
 
   // ── Banking up ────────────────────────────────────────────────────────────
   if (upPhase > 0.1 && _rohanUpBankCache.length === 2) {

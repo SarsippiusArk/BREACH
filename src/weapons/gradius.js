@@ -9,7 +9,7 @@ import {
 
 const LABELS      = ['SPD', 'MSL', 'DBL', 'RIP', 'LAS', 'OPT', 'SHD'];
 const SHIELD_MAX   = 20;
-const MISSILE_PERIOD = 0.50; // 80% slower launch rate than bullets (0.10 s each)
+const MISSILE_PERIOD = 1.50; // deliberate staggered launch — one pair every 1.5 s
 
 class GradiusSystem extends WeaponSystem {
   init(player) {

@@ -173,7 +173,7 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
       const drawFn = DRAW_FNS[this.pilotId] ?? drawAmyShip;
 
       this.ws.drawShipPre(ctx, this);
-      drawFn(ctx, this.x, this.y, this.palette, inv, this.bankDir, this.upBankPhase);
+      drawFn(ctx, this.x, this.y, this.palette, inv, this.bankDir, this.upBankPhase, this.chargeLevel);
       this.ws.drawShipPost(ctx, this);
 
       if (this.chargeLevel > 0.1) {
