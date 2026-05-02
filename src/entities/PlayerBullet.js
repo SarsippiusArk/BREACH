@@ -10,6 +10,7 @@ import {
   drawBeanShot, drawThunderball, drawLiminaeOption,
   drawPitBeam, drawAALaser, drawAARing, drawAAUpper, drawAALower,
   drawEDFShot, drawEDFWide, drawEDFLaser, drawEDFGravity, drawEDFHoming, drawEDFReflect,
+  drawDTShot, drawDTBomb, drawDTExplosion,
 } from '../draw/drawWeapons.js';
 
 const BEAM_W = 8, BEAM_H = 3;
@@ -757,4 +758,98 @@ function _edfReflect(x, y, charged, pi, isDrone, ang, dmg) {
       draw(ctx) { drawEDFReflect(ctx, this.x, this.y); },
     };
   });
+}
+
+// ── Akane — Darius Twin bullet factories ─────────────────────────────────────
+
+/** Darius Twin main shot — angle pattern scales with shot level (0-4) */
+export function createDTShot(x, y, level = 0, playerIdx = 0, charged = false) {
+  const spd = (level >= 4 ? 420 : 370) - (charged ? 30 : 0);
+  const dmg = (level >= 4 ? 3 : 1) + (charged ? 1 : 0);
+
+  if (level === 1) {
+    // Twin beam — two parallel beams offset vertically
+    return [-3, 3].map(off => ({
+      type: 'playerBullet', alive: true, x, y: y + off - 1, w: 10, h: 2,
+      player: playerIdx, charged, damage: dmg, vx: spd, vy: 0, age: 0, piercing: false,
+      update(d) { this.x += this.vx * d; this.age += d; if (this.x > 520 || this.age > 2) this.alive = false; },
+      draw(ctx) { drawDTShot(ctx, this.x, this.y, level); },
+    }));
+  }
+
+  if (level >= 4) {
+    // Wide laser
+    return [{
+      type: 'playerBullet', alive: true, x, y: y - 2, w: 20, h: 5,
+      player: playerIdx, charged, damage: dmg, vx: spd, vy: 0, age: 0, piercing: true,
+      update(d) { this.x += this.vx * d; this.age += d; if (this.x > 520 || this.age > 2) this.alive = false; },
+      draw(ctx) { drawDTShot(ctx, this.x, this.y, 4); },
+    }];
+  }
+
+  const angleMap = [
+    [0],
+    [0],                          // lv1 handled above
+    [-15, 0, 15],
+    [-25, -12, 0, 12, 25],
+  ];
+  const angles = angleMap[Math.min(level, 3)];
+  return angles.map(deg => {
+    const rad = deg * Math.PI / 180;
+    return {
+      type: 'playerBullet', alive: true, x, y: y - 1, w: 10, h: 2,
+      player: playerIdx, charged, damage: dmg,
+      vx: Math.cos(rad) * spd, vy: Math.sin(rad) * spd,
+      age: 0, piercing: false,
+      update(d) { this.x += this.vx * d; this.y += this.vy * d; this.age += d; if (this.x > 520 || this.x < -20 || this.y < -10 || this.y > 290 || this.age > 2) this.alive = false; },
+      draw(ctx) { drawDTShot(ctx, this.x, this.y, level); },
+    };
+  });
+}
+
+/** Darius Twin bomb — arcs downward; spawns explosion on floor contact */
+export function createDTBomb(x, y, level = 1, playerIdx = 0) {
+  const count = level >= 2 ? 2 : 1;
+  const vyBase = [110, 95, 125];
+  return Array.from({ length: count }, (_, i) => {
+    const vy0 = level >= 2 ? vyBase[i + 1] : vyBase[0];
+    return {
+      type: 'playerBullet', alive: true,
+      x, y, w: 8, h: 5, player: playerIdx,
+      charged: false, damage: 4, vx: 120, vy: vy0,
+      age: 0, piercing: false,
+      bulletsToSpawn: [],
+      update(d) {
+        this.vy += 40 * d;  // gravity arc
+        this.x  += this.vx * d;
+        this.y  += this.vy * d;
+        this.age += d;
+        if (this.y + this.h >= GAME_H - 4) {
+          this.bulletsToSpawn.push(...createDTExplosion(this.x + 4, GAME_H - 6, playerIdx));
+          this.alive = false;
+        } else if (this.x > 520 || this.age > 3) {
+          this.alive = false;
+        }
+      },
+      draw(ctx) { drawDTBomb(ctx, this.x, this.y, this.vx, this.vy); },
+    };
+  });
+}
+
+/** Darius Twin bomb explosion — stationary expanding burst */
+export function createDTExplosion(cx, cy, playerIdx = 0) {
+  return [{
+    type: 'playerBullet', alive: true,
+    x: cx - 10, y: cy - 10, w: 20, h: 20,
+    player: playerIdx, charged: false, damage: 3, vx: 0, vy: 0,
+    age: 0, piercing: true,
+    update(d) {
+      this.age += d;
+      const r = 10 + this.age * 130;
+      this.x = cx - r; this.y = cy - r;
+      this.w = this.h = r * 2;
+      if (this.age > 0.4) this.alive = false;
+    },
+    draw(ctx) { drawDTExplosion(ctx, cx, cy, this.age); },
+  }];
 }

@@ -990,6 +990,61 @@ export function drawAALower(ctx, cx, cy) {
   }
 }
 
+// ── Akane — Darius Twin weapon visuals ───────────────────────────────────────
+
+const _DT_SHOT_COLS  = ['#BBCCDD', '#88AAFF', '#44CCFF', '#FFEE66', '#FFFFFF'];
+const _DT_SHOT_GLOWS = ['#556677', '#224488', '#006688', '#886600', '#AACCFF'];
+
+/** Darius Twin main shot — colour and size scale with shot level (0-4) */
+export function drawDTShot(ctx, x, y, level = 0) {
+  x = Math.round(x); y = Math.round(y);
+  const col  = _DT_SHOT_COLS[Math.min(level, 4)];
+  const glow = _DT_SHOT_GLOWS[Math.min(level, 4)];
+  if (level >= 4) {
+    // Wide laser — tall gold beam
+    ctx.save();
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = '#FFEE66'; ctx.fillRect(x, y - 3, 22, 11);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#886600'; ctx.fillRect(x, y - 1, 20, 7);
+    ctx.fillStyle = col;       ctx.fillRect(x, y,     20, 5);
+    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x + 2, y + 1, 8, 2);
+    ctx.restore();
+  } else {
+    ctx.fillStyle = glow; ctx.fillRect(x, y - 1, 12, 4);
+    ctx.fillStyle = col;  ctx.fillRect(x, y,     10, 2);
+    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x + 2, y, 4, 1);
+  }
+}
+
+/** Darius Twin bomb — downward-arcing missile (direction-aware) */
+export function drawDTBomb(ctx, x, y, vx = 120, vy = 110) {
+  x = Math.round(x); y = Math.round(y);
+  const angle = Math.atan2(vy, vx);
+  ctx.save();
+  ctx.translate(x + 4, y + 3);
+  ctx.rotate(angle);
+  ctx.fillStyle = '#CC4400'; ctx.fillRect(-4, -2, 9, 5);   // body
+  ctx.fillStyle = '#FF8800'; ctx.fillRect( 2, -2, 3, 5);   // nose
+  ctx.fillStyle = '#FFCC44'; ctx.fillRect( 4,  0, 1, 1);   // tip glint
+  ctx.fillStyle = '#FF2200'; ctx.fillRect(-5,  0, 2, 1);   // exhaust
+  ctx.restore();
+}
+
+/** Darius Twin bomb ground burst — expanding orange ring */
+export function drawDTExplosion(ctx, cx, cy, age = 0) {
+  cx = Math.round(cx); cy = Math.round(cy);
+  const r     = 10 + age * 130;
+  const alpha = Math.max(0, 0.7 - age * 1.8);
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = '#FFCC44'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle = '#FF6600'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.55, 0, Math.PI * 2); ctx.stroke();
+  ctx.restore();
+}
+
 // ── Akane — Super E.D.F. weapon visuals ──────────────────────────────────────
 
 /** EDF SHOT — small blue-white forward bullet */

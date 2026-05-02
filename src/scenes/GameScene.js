@@ -282,6 +282,7 @@ export class GameScene {
     checkGroups(powerups, this.#players, (pu, p) => {
       if (!p.alive) return;
       if (p.pilotId === 'amy') p.onPowerUpCollect?.();
+      p.ws?.onPowerUpCollect?.(p, pu.subtype); // notify all weapon systems
       if (pu.subtype === 'forcePod' && p.pilotId === 'rohan') {
         p.ws.receiveForcePod(p, this.#entities);
       } else {
