@@ -2,7 +2,7 @@ import { GAME_W, GAME_H, PILOT_DATA } from '../constants.js';
 import {
   drawAmyShip, drawRohanShip, drawAkaneShip,
   drawShaneShip, drawFaradayShip, drawLiminaeShip,
-  drawAmyDeathAnim, drawRohanChargeFx,
+  drawAmyDeathAnim, drawRohanDeathAnim, drawRohanChargeFx,
   SHIP_W, SHIP_H, ROHAN_NOSE_OX, ROHAN_NOSE_OY,
 } from '../draw/drawSprites.js';
 import { drawChargeEffect } from '../draw/drawHUD.js';
@@ -165,12 +165,15 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
     },
 
     draw(ctx) {
-      // Death animation — plays for 750 ms at the explosion centre,
-      // even while respawning (replaces ship visibility for that window)
-      if (this.deathAnimStart > 0 && this.pilotId === 'amy') {
+      // Death animation — plays at explosion centre while respawning
+      if (this.deathAnimStart > 0) {
         const ms = Date.now() - this.deathAnimStart;
-        if (ms < 750) {
+        if (this.pilotId === 'amy' && ms < 750) {
           drawAmyDeathAnim(ctx, this.deathAnimCX, this.deathAnimCY, ms);
+          return;
+        }
+        if (this.pilotId === 'rohan' && ms < 720) {
+          drawRohanDeathAnim(ctx, this.deathAnimCX, this.deathAnimCY, ms);
           return;
         }
       }

@@ -405,6 +405,55 @@ const _rohanChargeFxCache = [];
   }
 }());
 
+// ── Rohan: ship-destruction animation (4 expanding rings, 214×60) ─────────────
+// Frame centres were pixel-measured; each frame is cut symmetrically around its
+// ring so `cx - frame.width/2` draws the ring centred on the explosion point.
+const ROHAN_DEATH_FRAMES = [
+  { sx:   0, sw: 24 },
+  { sx:  27, sw: 40 },
+  { sx:  71, sw: 54 },
+  { sx: 129, sw: 52 },
+];
+const ROHAN_DEATH_SH = 60;
+const ROHAN_DEATH_MS = 180;   // ms per frame → 720 ms total
+const _rohanDeathCache = [];
+
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/rohan_death.png';
+  });
+  if (!img) return;
+  for (const { sx, sw } of ROHAN_DEATH_FRAMES) {
+    const oc  = Object.assign(document.createElement('canvas'), { width: sw, height: ROHAN_DEATH_SH });
+    const c2d = oc.getContext('2d');
+    c2d.drawImage(img, sx, 0, sw, ROHAN_DEATH_SH, 0, 0, sw, ROHAN_DEATH_SH);
+    const id = c2d.getImageData(0, 0, sw, ROHAN_DEATH_SH); const d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i], g = d[i+1], b = d[i+2];
+      if (Math.abs(r-163)+Math.abs(g-73)+Math.abs(b-164) <= 20
+          || (r < 15 && g < 15 && b < 15)) d[i+3] = 0;
+    }
+    c2d.putImageData(id, 0, 0);
+    _rohanDeathCache.push(oc);
+  }
+}());
+
+/**
+ * Draw Rohan's ship destruction animation (4 expanding ring frames).
+ * @param {number} ms  milliseconds since death
+ * @returns {boolean}  true = still animating, false = finished
+ */
+export function drawRohanDeathAnim(ctx, cx, cy, ms) {
+  const total = ROHAN_DEATH_MS * ROHAN_DEATH_FRAMES.length;
+  if (ms >= total || _rohanDeathCache.length < ROHAN_DEATH_FRAMES.length) return false;
+  const fi    = Math.min(ROHAN_DEATH_FRAMES.length - 1, Math.floor(ms / ROHAN_DEATH_MS));
+  const frame = _rohanDeathCache[fi];
+  if (!frame) return true;
+  ctx.drawImage(frame, Math.round(cx - frame.width / 2), Math.round(cy - ROHAN_DEATH_SH / 2));
+  return true;
+}
+
 // ── Rohan sprite atlas (Kilrathi heavy gunship — palette-swappable) ──────────
 const ROHAN_DEFAULT_PAL = ['#009200','#49DB00','#00DBDB','#FF9200'];
 let _kilrathiSheet = null;
