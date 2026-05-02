@@ -1,7 +1,7 @@
 import { GAME_H } from '../constants.js';
 import { drawPlayerBeam, drawAmyBullet, drawAmyDoubleBullet } from '../draw/drawSprites.js';
 import {
-  drawVulcanBullet, drawDoubleShot, drawLaserBeam, drawGroundMissile, drawBombExplosion,
+  drawVulcanBullet, drawDoubleShot, drawLaserBeam, drawGroundMissile, drawAirMissile, drawBombExplosion,
   drawRippleBullet,
   drawWaveCannon, drawMacrossMissile, drawHyperCannon,
   drawAxelayPellet, drawNapalmPod, drawSpiralBomb,
@@ -28,10 +28,9 @@ export function createPlayerBullet(x, y, pilot, charged = false, player = 0) {
   const bullets = [];
 
   if (pilot === 'amy' && !charged) {
-    // Twin beams — sprite draw
+    // Single beam — sprite draw, centred on the ship midline
     const df = (ctx, bx, by) => drawAmyBullet(ctx, bx, by);
-    bullets.push(makeBullet(x, y - AMY_DOUBLE_OFFSET - h/2, w, h, speed, charged, player, 0, df));
-    bullets.push(makeBullet(x, y + AMY_DOUBLE_OFFSET - h/2, w, h, speed, charged, player, 0, df));
+    bullets.push(makeBullet(x, y - h/2, w, h, speed, charged, player, 0, df));
   } else if (pilot === 'amy' && charged) {
     // Twin charged beams (keep procedural for now)
     bullets.push(makeBullet(x, y - 3, w, h, speed, charged, player, 0));
@@ -124,7 +123,7 @@ export function createGroundMissile(x, y, player = 0) {
   return [{
     type: 'playerBullet', alive: true, x, y, w: 7, h: 4, player,
     charged: false, damage: 2,
-    vx: 180, vy: 90,         // steeper drop so missile clearly hits ground
+    vx: 180, vy: 36,         // drops slowly (60% slower vertical than original)
     age: 0, piercing: false,
     bulletsToSpawn: [],
 
@@ -159,10 +158,11 @@ export function createAirMissile(x, y, player = 0) {
   return [{
     type: 'playerBullet', alive: true, x, y, w: 7, h: 4, player,
     charged: false, damage: 2,
-    vx: 180, vy: -90,
+    vx: 180, vy: -36,
     age: 0, piercing: false,
     bulletsToSpawn: [],
 
+    // Called by GameScene collision handler when missile hits an enemy/boss
     onHit(entities) {
       for (const e of createMissileExplosion(this.x + 3, this.y + 2, this.player)) {
         entities.add(e);
@@ -180,7 +180,7 @@ export function createAirMissile(x, y, player = 0) {
         this.alive = false;
       }
     },
-    draw(ctx) { drawGroundMissile(ctx, this.x, this.y); },
+    draw(ctx) { drawAirMissile(ctx, this.x, this.y, this.age); },
   }];
 }
 

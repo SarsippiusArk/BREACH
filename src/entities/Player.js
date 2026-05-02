@@ -88,9 +88,14 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
 
       // Charge & fire
       this.fireTimer = Math.max(0, this.fireTimer - delta);
-      const holding  = input.isDown(pi, 'fire');
+      const holding    = input.isDown(pi, 'fire');
+      const wsCanCharge = this.ws.canCharge?.() ?? true;
 
-      if (holding) {
+      if (!wsCanCharge) {
+        // Rapid-only weapon — no charge accumulation, single-tap also fires
+        this.chargeTimer = 0; this.chargeLevel = 0; this.isCharging = false;
+        if (input.isPressed(pi, 'fire')) this._fire('rapid');
+      } else if (holding) {
         this.chargeTimer += delta;
         this.chargeLevel  = Math.min(this.chargeTimer / 1.2, 1);
         this.isCharging   = this.chargeTimer > 0.25;
@@ -102,8 +107,8 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
         this._fire('rapid');
       }
 
-      // Rapid auto-fire (while holding, before charge threshold)
-      if (holding && !this.isCharging && this.fireTimer <= 0) {
+      // Rapid auto-fire (while holding; always active when charge is disabled)
+      if (holding && (!this.isCharging || !wsCanCharge) && this.fireTimer <= 0) {
         this._fire('rapid');
         const rate = this.ws.fireRate(this) ?? data.fireRate;
         this.fireTimer = rate * Math.max(0.5, 1 - (this.rapidLevel || 0) * 0.15);

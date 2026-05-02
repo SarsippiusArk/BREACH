@@ -304,6 +304,64 @@ export function drawShieldBubble(ctx, cx, cy, hpFraction, fi) {
   ctx.restore();
 }
 
+// ── Amy: Air missile sprite loader ────────────────────────────────────────────
+// Source: 64×13, 5 frames at x=[0,13,26,39,52], each 13×13 (last 12×13).
+// Mixed bg: black (background), white (header row 0), lime-green (chroma),
+// and purple RGB≈(129,0,129) separator row 6. All four are stripped to alpha=0.
+const _AIR_MSL_SPECS = [
+  { sx:  0, sw: 13 },
+  { sx: 13, sw: 13 },
+  { sx: 26, sw: 13 },
+  { sx: 39, sw: 13 },
+  { sx: 52, sw: 12 },
+];
+const _airMslFrames = [];
+
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image();
+    i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/amy_missile_up.png';
+  });
+  if (!img) return;
+  for (const { sx, sw } of _AIR_MSL_SPECS) {
+    const sh = 13;
+    const tmp = Object.assign(document.createElement('canvas'), { width: sw, height: sh });
+    const tc  = tmp.getContext('2d');
+    tc.drawImage(img, sx, 0, sw, sh, 0, 0, sw, sh);
+    const id = tc.getImageData(0, 0, sw, sh); const d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i], g = d[i+1], b = d[i+2];
+      if ((r < 16 && g < 16 && b < 16)   ||                         // black bg
+          (r > 240 && g > 240 && b > 240) ||                         // white header
+          (Math.abs(r-128)+Math.abs(g-255)+Math.abs(b-128) <= 20) || // lime-green chroma
+          (Math.abs(r-129)+Math.abs(g)+Math.abs(b-129) <= 30)) {     // purple separator
+        d[i+3] = 0;
+      }
+    }
+    tc.putImageData(id, 0, 0);
+    const oc  = Object.assign(document.createElement('canvas'), { width: sw*2, height: sh*2 });
+    const c2d = oc.getContext('2d'); c2d.imageSmoothingEnabled = false;
+    c2d.drawImage(tmp, 0, 0, sw, sh, 0, 0, sw*2, sh*2);
+    _airMslFrames.push(oc);
+  }
+}());
+
+/** Draw one frame of Amy's upward-arcing missile, centred on (x, y). */
+export function drawAirMissile(ctx, x, y, age) {
+  x = Math.round(x); y = Math.round(y);
+  if (_airMslFrames.length === 5) {
+    const fi    = Math.floor(age / 0.07) % 5;
+    const frame = _airMslFrames[fi];
+    ctx.drawImage(frame, x - Math.round(frame.width / 2), y - Math.round(frame.height / 2));
+    return;
+  }
+  // Procedural fallback — violet dart pointing up
+  ctx.fillStyle = '#DD88FF'; ctx.fillRect(x - 2, y - 6, 4, 10);
+  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x - 1, y - 5, 2, 4);
+  ctx.fillStyle = '#FF8800'; ctx.fillRect(x - 2, y + 3, 4, 3);
+}
+
 /** Amy: ground-tracking missile (fires slightly downward) */
 export function drawGroundMissile(ctx, x, y) {
   x = Math.round(x); y = Math.round(y);

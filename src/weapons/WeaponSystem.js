@@ -41,6 +41,10 @@ export class WeaponSystem {
    */
   onBellCollect(player, colorName) {}
 
+  /** Return false to disable charge-shot accumulation for this weapon system.
+   *  When false, holding fire always produces rapid-fire; no charge window. */
+  canCharge() { return true; }
+
   /** Return override fire rate in seconds, or null to use PILOT_DATA default. */
   fireRate(player) { return null; }
 

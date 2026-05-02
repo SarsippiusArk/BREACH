@@ -8,7 +8,8 @@ import {
 } from '../entities/PlayerBullet.js';
 
 const LABELS      = ['SPD', 'MSL', 'DBL', 'RIP', 'LAS', 'OPT', 'SHD'];
-const SHIELD_MAX  = 20;  // HP; bullets cost 1, ship contacts cost 2
+const SHIELD_MAX   = 20;  // HP; bullets cost 1, ship contacts cost 2
+const MISSILE_PERIOD = 0.25; // missile pair fires every 0.25s (bullets every 0.10s → 60% slower rate)
 
 class GradiusSystem extends WeaponSystem {
   init(player) {
@@ -16,12 +17,14 @@ class GradiusSystem extends WeaponSystem {
     player.capsuleBarTimer = 0;
     player.posHistory      = [];
     player.upgrades        = { speed: 0, missile: false, double: false, ripple: false, laser: false, optionCount: 0, shield: false };
+    player.missileTimer    = 0;
   }
 
   update(delta, player) {
     player.posHistory.push({ x: player.x, y: player.y });
     if (player.posHistory.length > 180) player.posHistory.shift();
     if (player.capsuleBarTimer > 0) player.capsuleBarTimer -= delta;
+    if (player.missileTimer   > 0) player.missileTimer   -= delta;
   }
 
   shoot(player, bx, by, charged) {
@@ -38,9 +41,10 @@ class GradiusSystem extends WeaponSystem {
         player.bulletsToSpawn.push(...createPlayerBullet(bx, by, 'amy', false, player.playerIdx));
         if (u.double) player.bulletsToSpawn.push(...createDoubleShot(bx, by, player.playerIdx));
       }
-      if (u.missile) {
+      if (u.missile && player.missileTimer <= 0) {
         player.bulletsToSpawn.push(...createGroundMissile(bx, by + 4, player.playerIdx));
         player.bulletsToSpawn.push(...createAirMissile(bx, by - 4, player.playerIdx));
+        player.missileTimer = MISSILE_PERIOD;
       }
     }
     // Option orbs also fire
@@ -72,6 +76,8 @@ class GradiusSystem extends WeaponSystem {
     player.capsuleSel      = (player.capsuleSel + 1) % LABELS.length;
     player.capsuleBarTimer = 4.0;
   }
+
+  canCharge() { return false; }
 
   trailColor() { return '#4466FF'; }
 
