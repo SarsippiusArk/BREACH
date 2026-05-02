@@ -123,7 +123,7 @@ export function createGroundMissile(x, y, player = 0) {
   return [{
     type: 'playerBullet', alive: true, x, y, w: 7, h: 4, player,
     charged: false, damage: 2,
-    vx: 0, vy: 80,          // purely vertical drop
+    vx: 30, vy: 80,         // slight forward drift, mostly vertical drop
     age: 0, piercing: false,
     bulletsToSpawn: [],
 
@@ -158,7 +158,7 @@ export function createAirMissile(x, y, player = 0) {
   return [{
     type: 'playerBullet', alive: true, x, y, w: 7, h: 4, player,
     charged: false, damage: 2,
-    vx: 0, vy: -80,
+    vx: 30, vy: -80,
     age: 0, piercing: false,
     bulletsToSpawn: [],
 
