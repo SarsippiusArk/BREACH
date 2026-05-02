@@ -142,6 +142,56 @@ export function drawAmyDeathAnim(ctx, cx, cy, ms) {
   return true;
 }
 
+// ── Amy: double-shot sprite loader ────────────────────────────────────────────
+// Source: 13×28, lime-green bg. Two diagonal sprites stacked vertically.
+//   Upper bullet (vy<0): sy=0,  sh=7  — tip at top-right
+//   Lower bullet (vy>0): sy=20, sh=8  — tip at bottom-right
+let _amyDblUpCache = null;
+let _amyDblDnCache = null;
+
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image();
+    i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/amy_double.png';
+  });
+  if (!img) return;
+  for (const [sy, sh, isUp] of [[0, 7, true], [20, 8, false]]) {
+    const SW = 13, DW = SW * 2, DH = sh * 2;
+    const tmp = Object.assign(document.createElement('canvas'), { width: SW, height: sh });
+    const tc  = tmp.getContext('2d');
+    tc.drawImage(img, 0, sy, SW, sh, 0, 0, SW, sh);
+    const id = tc.getImageData(0, 0, SW, sh); const d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      if (Math.abs(d[i]-AMY_BG[0]) + Math.abs(d[i+1]-AMY_BG[1]) + Math.abs(d[i+2]-AMY_BG[2]) <= AMY_BG_TOL) d[i+3] = 0;
+    }
+    tc.putImageData(id, 0, 0);
+    const oc  = Object.assign(document.createElement('canvas'), { width: DW, height: DH });
+    const c2d = oc.getContext('2d'); c2d.imageSmoothingEnabled = false;
+    c2d.drawImage(tmp, 0, 0, SW, sh, 0, 0, DW, DH);
+    if (isUp) _amyDblUpCache = oc; else _amyDblDnCache = oc;
+  }
+}());
+
+/**
+ * Draw Amy's double-shot bullet (diagonal sprite, 2× scaled).
+ * @param {boolean} up  — true = upper beam (vy<0), false = lower beam (vy>0)
+ */
+export function drawAmyDoubleBullet(ctx, x, y, up) {
+  x = Math.round(x); y = Math.round(y);
+  const cache = up ? _amyDblUpCache : _amyDblDnCache;
+  if (cache) {
+    // Centre sprite on entity centre (x+4, y+1)
+    ctx.drawImage(cache,
+      x + 4 - Math.round(cache.width  / 2),
+      y + 1 - Math.round(cache.height / 2));
+    return;
+  }
+  // Procedural fallback
+  ctx.fillStyle = '#D04800'; ctx.fillRect(x, y, 8, 2);
+  ctx.fillStyle = '#F0F0F0'; ctx.fillRect(x + 5, y, 2, 1);
+}
+
 // ── Amy: bullet sprite loader ─────────────────────────────────────────────────
 // Source: 12×7, lime-green chroma key. Content at rows 3–4, cols 0–11 (8 px
 // of actual data centred in the strip). Display at 2× → 24×4 canvas.

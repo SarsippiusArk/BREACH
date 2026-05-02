@@ -1,5 +1,5 @@
 import { GAME_H } from '../constants.js';
-import { drawPlayerBeam, drawAmyBullet } from '../draw/drawSprites.js';
+import { drawPlayerBeam, drawAmyBullet, drawAmyDoubleBullet } from '../draw/drawSprites.js';
 import {
   drawVulcanBullet, drawDoubleShot, drawLaserBeam, drawGroundMissile, drawBombExplosion,
   drawWaveCannon, drawMacrossMissile, drawHyperCannon,
@@ -105,15 +105,15 @@ export function createLockOnMissile(x, y, targetRef, player) {
 
 // ── Amy — Gradius upgrades ────────────────────────────────────────────────────
 
-/** Double-shot: angled beam pair (±20°) */
+/** Double-shot: angled beam pair (±20°) — sprite per direction */
 export function createDoubleShot(x, y, player = 0) {
-  const make = (vy) => ({
+  const make = (vy, up) => ({
     type: 'playerBullet', alive: true, x, y, w: 8, h: 2, player,
-    charged: false, damage: 1, vx: 320, vy, age: 0, piercing: false,
-    update(d) { this.x += this.vx*d; this.y += this.vy*d; this.age+=d; if(this.x>520||this.y<-10||this.y>290)this.alive=false; },
-    draw(ctx) { drawDoubleShot(ctx, this.x, this.y); },
+    charged: false, damage: 1, vx: 320, vy, age: 0, piercing: false, _up: up,
+    update(d) { this.x+=this.vx*d; this.y+=this.vy*d; this.age+=d; if(this.x>520||this.y<-10||this.y>290)this.alive=false; },
+    draw(ctx) { drawAmyDoubleBullet(ctx, this.x, this.y, this._up); },
   });
-  return [make(-55), make(55)];
+  return [make(-55, true), make(55, false)];
 }
 
 /** Ground missile: drops steeply toward the ground / enemies.
