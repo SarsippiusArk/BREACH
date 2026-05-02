@@ -46,9 +46,49 @@ export function drawDoubleShot(ctx, x, y, w = 8) {
   ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x + 1, y, 3, 1);
 }
 
-/** Amy: laser beam (long, bright) */
+// ── Amy: Laser beam sprite loader ──────────────────────────────────────────────
+// Source: 23×20, lime-green chroma key. Content: 16×2 at (sx=4, sy=9).
+// Scaled 2× to 32×4 for display.
+let _laserSprite = null;
+
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image();
+    i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/amy_laser.png';
+  });
+  if (!img) return;
+  const SW = 16, SH = 2, DW = 32, DH = 4;
+  const tmp = Object.assign(document.createElement('canvas'), { width: SW, height: SH });
+  const tc  = tmp.getContext('2d');
+  tc.drawImage(img, 4, 9, SW, SH, 0, 0, SW, SH); // extract content region
+  const id = tc.getImageData(0, 0, SW, SH); const d = id.data;
+  for (let i = 0; i < d.length; i += 4) {
+    if (Math.abs(d[i]-128) + Math.abs(d[i+1]-255) + Math.abs(d[i+2]-128) <= 20) d[i+3] = 0;
+  }
+  tc.putImageData(id, 0, 0);
+  const oc  = Object.assign(document.createElement('canvas'), { width: DW, height: DH });
+  const c2d = oc.getContext('2d'); c2d.imageSmoothingEnabled = false;
+  c2d.drawImage(tmp, 0, 0, SW, SH, 0, 0, DW, DH);
+  _laserSprite = oc;
+}());
+
+/** Amy: laser beam — sprite 2× (32×4) with soft glow halo. Falls back to procedural. */
 export function drawLaserBeam(ctx, x, y) {
   x = Math.round(x); y = Math.round(y);
+  if (_laserSprite) {
+    // Soft glow halo behind the sprite
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = '#88EEFF';
+    ctx.fillRect(x, y - 3, 32, 8);
+    ctx.globalAlpha = 1;
+    // Pixel-art beam centred on y (sprite is 4px tall, so top = y-2)
+    ctx.drawImage(_laserSprite, x, y - 2);
+    ctx.restore();
+    return;
+  }
+  // ── Procedural fallback ───────────────────────────────────────────────────
   ctx.fillStyle = 'rgba(180,255,255,0.4)'; ctx.fillRect(x, y - 2, 24, 6);
   ctx.fillStyle = '#00FFFF'; ctx.fillRect(x, y, 24, 2);
   ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x + 1, y, 18, 1);

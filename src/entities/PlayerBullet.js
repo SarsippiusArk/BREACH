@@ -125,7 +125,7 @@ export function createGroundMissile(x, y, player = 0) {
 /** Laser beam: fast, long, piercing */
 export function createLaserBeam(x, y, player = 0) {
   return [{
-    type: 'playerBullet', alive: true, x, y: y - 1, w: 24, h: 4, player,
+    type: 'playerBullet', alive: true, x, y: y - 1, w: 32, h: 4, player,
     charged: false, damage: 2, vx: 480, vy: 0, age: 0, piercing: true,
     update(d) { this.x+=this.vx*d; this.age+=d; if(this.x>520)this.alive=false; },
     draw(ctx) { drawLaserBeam(ctx, this.x, this.y); },
