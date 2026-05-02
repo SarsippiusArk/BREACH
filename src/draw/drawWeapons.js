@@ -612,25 +612,72 @@ export function drawPartialWaveCannon(ctx, cx, cy) {
   ctx.fillStyle = '#FFFFFF'; ctx.fillRect(cx - 16, cy - 1, 32, 2);
 }
 
-/** Rohan: Force pod (attached = still, flying = trailing sparks) */
+// ── Rohan: Force Bit sprite sheet (rohan_force_bit.png, 200×33, 5 frames×40px) ─
+// Chroma key: green RGB(34,177,76) tol=30 + black.
+// Frame map:
+//   0-1  attached / floating idle  (warm orange Bit, 2-frame pulse)
+//   2    flying                    (silver/active Bit)
+//   3-4  returning                 (smaller detached Bit, 2-frame flicker)
+const _forceBitFrames = [];
+
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/rohan_force_bit.png';
+  });
+  if (!img) return;
+  const FW = 40, FH = 33;
+  for (let f = 0; f < 5; f++) {
+    const oc  = Object.assign(document.createElement('canvas'), { width: FW, height: FH });
+    const c2d = oc.getContext('2d');
+    c2d.drawImage(img, f * FW, 0, FW, FH, 0, 0, FW, FH);
+    const id = c2d.getImageData(0, 0, FW, FH); const d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i], g = d[i+1], b = d[i+2];
+      if (Math.abs(r-34)+Math.abs(g-177)+Math.abs(b-76) <= 30
+          || (r < 15 && g < 15 && b < 15)) d[i+3] = 0;
+    }
+    c2d.putImageData(id, 0, 0);
+    _forceBitFrames.push(oc);
+  }
+}());
+
+/** Rohan: Force Bit — sprite-based, state-driven frame selection.
+ *  x/y = entity top-left (14×14 hitbox); sprite is centred on entity centre. */
 export function drawForcePod(ctx, x, y, state = 'attached', t = 0) {
   x = Math.round(x); y = Math.round(y);
+
+  if (_forceBitFrames.length === 5) {
+    let fi;
+    if (state === 'flying') {
+      fi = 2;
+    } else if (state === 'returning') {
+      fi = 3 + (Math.floor(t * 8) % 2);   // frames 3-4 flicker fast
+    } else {
+      fi = Math.floor(t * 5) % 2;           // frames 0-1 slow idle pulse
+    }
+    const frame = _forceBitFrames[fi];
+    ctx.drawImage(frame,
+      Math.round(x + 7 - frame.width  / 2),
+      Math.round(y + 7 - frame.height / 2),
+    );
+    return;
+  }
+
+  // Procedural fallback
   const pulse = 0.6 + Math.sin(t * 5) * 0.4;
   ctx.save();
-  // Energy ring
   ctx.globalAlpha = 0.4 * pulse;
   ctx.strokeStyle = state === 'flying' ? '#FF6600' : '#FF3300';
   ctx.lineWidth = 2;
   ctx.beginPath(); ctx.arc(x + 6, y + 6, 10, 0, Math.PI * 2); ctx.stroke();
   ctx.globalAlpha = 1;
-  // Core
   ctx.fillStyle = '#440000'; ctx.fillRect(x + 1, y + 1, 10, 10);
   ctx.fillStyle = '#CC2200'; ctx.fillRect(x + 2, y + 2, 8, 8);
   ctx.fillStyle = '#FF5500'; ctx.fillRect(x + 3, y + 3, 6, 6);
   ctx.fillStyle = '#FFCC44'; ctx.fillRect(x + 4, y + 4, 4, 4);
   ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x + 5, y + 5, 2, 2);
   if (state === 'flying') {
-    // Exhaust trail sparks
     ctx.globalAlpha = 0.6 * pulse;
     ctx.fillStyle = '#FF6600';
     ctx.fillRect(x - 4, y + 4, 3, 2); ctx.fillRect(x - 7, y + 3, 2, 4);
