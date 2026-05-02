@@ -9,18 +9,19 @@ import { createPlayerBullet, createPartialWaveCannon, createWaveCannon } from '.
 //   'flying'    – just launched; decelerates and transitions → 'floating'
 //   'floating'  – hovering in place; absorbs bullets; still damages enemies it touches
 //   'returning' – flying back to ship; reattaches on contact
-function createForcePodEntity(x, y, player = 0) {
+function createForcePodEntity(x, y, player = 0, level = 1) {
   return {
     type: 'forcePod',
     alive: true,
     x, y, w: 14, h: 14,
     player,
+    level,             // 1 or 2 — selects sprite sheet in drawForcePod
     vx: 0, vy: 0,
     state: 'attached',
-    damage: 4,      // contact damage while floating / returning
+    damage: 4,
     piercing: true,
     age: 0,
-    _targetX: x,   // updated each frame by weapon system when returning
+    _targetX: x,
     _targetY: y,
 
     update(delta) {
@@ -53,7 +54,7 @@ function createForcePodEntity(x, y, player = 0) {
     },
 
     draw(ctx) {
-      drawForcePod(ctx, this.x, this.y, this.state, Date.now() * 0.001);
+      drawForcePod(ctx, this.x, this.y, this.state, Date.now() * 0.001, this.level);
     },
   };
 }

@@ -618,45 +618,52 @@ export function drawPartialWaveCannon(ctx, cx, cy) {
 //   0-1  attached / floating idle  (warm orange Bit, 2-frame pulse)
 //   2    flying                    (silver/active Bit)
 //   3-4  returning                 (smaller detached Bit, 2-frame flicker)
-const _forceBitFrames = [];
+const _forceBitFrames  = [];   // level 1 (33px tall)
+const _forceBitFrames2 = [];   // level 2 (35px tall)
 
-(async function () {
-  const img = await new Promise(res => {
-    const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null);
-    i.src = './assets/rohan_force_bit.png';
-  });
-  if (!img) return;
-  const FW = 40, FH = 33;
-  for (let f = 0; f < 5; f++) {
-    const oc  = Object.assign(document.createElement('canvas'), { width: FW, height: FH });
-    const c2d = oc.getContext('2d');
-    c2d.drawImage(img, f * FW, 0, FW, FH, 0, 0, FW, FH);
-    const id = c2d.getImageData(0, 0, FW, FH); const d = id.data;
-    for (let i = 0; i < d.length; i += 4) {
-      const r = d[i], g = d[i+1], b = d[i+2];
-      if (Math.abs(r-34)+Math.abs(g-177)+Math.abs(b-76) <= 30
-          || (r < 15 && g < 15 && b < 15)) d[i+3] = 0;
+function _loadForceBitSheet(src, fh, out) {
+  (async function () {
+    const img = await new Promise(res => {
+      const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null);
+      i.src = src;
+    });
+    if (!img) return;
+    const FW = 40;
+    for (let f = 0; f < 5; f++) {
+      const oc  = Object.assign(document.createElement('canvas'), { width: FW, height: fh });
+      const c2d = oc.getContext('2d');
+      c2d.drawImage(img, f * FW, 0, FW, fh, 0, 0, FW, fh);
+      const id = c2d.getImageData(0, 0, FW, fh); const d = id.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const r = d[i], g = d[i+1], b = d[i+2];
+        if (Math.abs(r-34)+Math.abs(g-177)+Math.abs(b-76) <= 30
+            || (r < 15 && g < 15 && b < 15)) d[i+3] = 0;
+      }
+      c2d.putImageData(id, 0, 0);
+      out.push(oc);
     }
-    c2d.putImageData(id, 0, 0);
-    _forceBitFrames.push(oc);
-  }
-}());
+  }());
+}
+
+_loadForceBitSheet('./assets/rohan_force_bit.png',  33, _forceBitFrames);
+_loadForceBitSheet('./assets/rohan_force_bit2.png', 35, _forceBitFrames2);
 
 /** Rohan: Force Bit — sprite-based, state-driven frame selection.
  *  x/y = entity top-left (14×14 hitbox); sprite is centred on entity centre. */
-export function drawForcePod(ctx, x, y, state = 'attached', t = 0) {
+export function drawForcePod(ctx, x, y, state = 'attached', t = 0, level = 1) {
   x = Math.round(x); y = Math.round(y);
 
-  if (_forceBitFrames.length === 5) {
+  const sheets = level >= 2 ? _forceBitFrames2 : _forceBitFrames;
+  if (sheets.length === 5) {
     let fi;
     if (state === 'flying') {
       fi = 2;
     } else if (state === 'returning') {
-      fi = 3 + (Math.floor(t * 8) % 2);   // frames 3-4 flicker fast
+      fi = 3 + (Math.floor(t * 8) % 2);
     } else {
-      fi = Math.floor(t * 5) % 2;           // frames 0-1 slow idle pulse
+      fi = Math.floor(t * 5) % 2;
     }
-    const frame = _forceBitFrames[fi];
+    const frame = sheets[fi];
     ctx.drawImage(frame,
       Math.round(x + 7 - frame.width  / 2),
       Math.round(y + 7 - frame.height / 2),
