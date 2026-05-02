@@ -366,13 +366,41 @@ const _rohanDnBankCache = [];
   }
 }());
 
-// ── Rohan: charge animation ────────────────────────────────────────────────────
-// Loader disabled — rohan_charge.png downloaded identical to rohan_down_bank.png
-// (CDN deduplication). Awaiting correct sprite from user.
-// When chargeLevel > 0.05 and cache is empty, drawRohanShip falls through to
-// the normal banking/neutral sprite, so ship remains visible while charging.
+// ── Rohan: charge animation ship sprite ──────────────────────────────────────
+// rohan_charge.png still CDN-duplicated; loader stays disabled.
+// The charge-up FX is handled separately via rohan_charge_fx.png below.
 const _rohanChargeCache = [];
-// loader intentionally omitted until correct sprite is provided
+
+// ── Rohan: charge FX overlay (rohan_charge_fx.png, 34×27) ────────────────────
+// Confirmed unique sprite (MD5 edf403e99dbca524badf1fa9dc4add7c).
+// Split into 2 animation frames at 17×27 each (left / right half).
+const _rohanChargeFxCache = [];
+
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/rohan_charge_fx.png';
+  });
+  if (!img) return;
+  for (const sx of [0, 17]) {
+    const SW = 17, SH = 27;
+    const tmp = Object.assign(document.createElement('canvas'), { width: SW, height: SH });
+    const tc  = tmp.getContext('2d');
+    tc.drawImage(img, sx, 0, SW, SH, 0, 0, SW, SH);
+    const id = tc.getImageData(0, 0, SW, SH); const d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i], g = d[i+1], b = d[i+2];
+      if (Math.abs(r-163)+Math.abs(g-73)+Math.abs(b-164) <= 20
+          || (r < 15 && g < 15 && b < 15)) d[i+3] = 0;
+    }
+    tc.putImageData(id, 0, 0);
+    const DW = SW * 2, DH = SH * 2;
+    const oc  = Object.assign(document.createElement('canvas'), { width: DW, height: DH });
+    const c2d = oc.getContext('2d'); c2d.imageSmoothingEnabled = false;
+    c2d.drawImage(tmp, 0, 0, SW, SH, 0, 0, DW, DH);
+    _rohanChargeFxCache.push(oc);
+  }
+}());
 
 // ── Rohan sprite atlas (Kilrathi heavy gunship — palette-swappable) ──────────
 const ROHAN_DEFAULT_PAL = ['#009200','#49DB00','#00DBDB','#FF9200'];
@@ -924,4 +952,36 @@ export function drawLiminaeShip(ctx, x, y, pal, invincible) {
   ctx.fillStyle = li;
   ctx.fillRect(x + 18, y + 4, 5, 3);
   ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x + 21, y + 5, 2, 1);
+}
+
+/**
+ * Rohan: charge FX overlay — composited on top of ship while wave cannon builds.
+ * Call AFTER drawRohanShip. shipX/shipY = entity top-left (same as drawRohanShip args).
+ */
+export function drawRohanChargeFx(ctx, shipX, shipY, chargeLevel) {
+  if (chargeLevel <= 0.05) return;
+  const nx = shipX + SHIP_W;          // ship nose X
+  const ny = shipY + SHIP_H / 2;     // ship centre Y
+  const alpha = Math.min(1, 0.35 + chargeLevel * 0.65);
+
+  if (_rohanChargeFxCache.length >= 2) {
+    const fi    = Math.floor(Date.now() / 110) % 2;
+    const frame = _rohanChargeFxCache[fi];
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(frame,
+      Math.round(nx - frame.width  / 2),
+      Math.round(ny - frame.height / 2),
+    );
+    ctx.restore();
+  } else {
+    // Procedural fallback — violet energy orb growing with charge level
+    const r   = 4 + chargeLevel * 11;
+    const grd = ctx.createRadialGradient(nx, ny, 0, nx, ny, r);
+    grd.addColorStop(0,   `rgba(220,160,255,${alpha})`);
+    grd.addColorStop(0.5, `rgba(140,60,255,${0.7 * alpha})`);
+    grd.addColorStop(1,   'rgba(80,0,200,0)');
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.arc(nx, ny, r, 0, Math.PI * 2); ctx.fill();
+  }
 }

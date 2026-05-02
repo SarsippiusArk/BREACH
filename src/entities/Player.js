@@ -2,7 +2,7 @@ import { GAME_W, GAME_H, PILOT_DATA } from '../constants.js';
 import {
   drawAmyShip, drawRohanShip, drawAkaneShip,
   drawShaneShip, drawFaradayShip, drawLiminaeShip,
-  drawAmyDeathAnim,
+  drawAmyDeathAnim, drawRohanChargeFx,
   SHIP_W, SHIP_H,
 } from '../draw/drawSprites.js';
 import { drawChargeEffect } from '../draw/drawHUD.js';
@@ -183,7 +183,11 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
       this.ws.drawShipPost(ctx, this);
 
       if (this.chargeLevel > 0.1) {
-        drawChargeEffect(ctx, this.x + SHIP_W, this.y + SHIP_H / 2, this.chargeLevel);
+        if (this.pilotId === 'rohan') {
+          drawRohanChargeFx(ctx, this.x, this.y, this.chargeLevel);
+        } else {
+          drawChargeEffect(ctx, this.x + SHIP_W, this.y + SHIP_H / 2, this.chargeLevel);
+        }
       }
     },
   };
