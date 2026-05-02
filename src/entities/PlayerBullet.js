@@ -1,5 +1,5 @@
 import { GAME_H } from '../constants.js';
-import { drawPlayerBeam } from '../draw/drawSprites.js';
+import { drawPlayerBeam, drawAmyBullet } from '../draw/drawSprites.js';
 import {
   drawVulcanBullet, drawDoubleShot, drawLaserBeam, drawGroundMissile, drawBombExplosion,
   drawWaveCannon, drawMacrossMissile, drawHyperCannon,
@@ -27,11 +27,12 @@ export function createPlayerBullet(x, y, pilot, charged = false, player = 0) {
   const bullets = [];
 
   if (pilot === 'amy' && !charged) {
-    // Twin beams (above and below center)
-    bullets.push(makeBullet(x, y - AMY_DOUBLE_OFFSET - h/2, w, h, speed, charged, player, 0));
-    bullets.push(makeBullet(x, y + AMY_DOUBLE_OFFSET - h/2, w, h, speed, charged, player, 0));
+    // Twin beams — sprite draw
+    const df = (ctx, bx, by) => drawAmyBullet(ctx, bx, by);
+    bullets.push(makeBullet(x, y - AMY_DOUBLE_OFFSET - h/2, w, h, speed, charged, player, 0, df));
+    bullets.push(makeBullet(x, y + AMY_DOUBLE_OFFSET - h/2, w, h, speed, charged, player, 0, df));
   } else if (pilot === 'amy' && charged) {
-    // Twin charged beams
+    // Twin charged beams (keep procedural for now)
     bullets.push(makeBullet(x, y - 3, w, h, speed, charged, player, 0));
     bullets.push(makeBullet(x, y + 3, w, h, speed, charged, player, 0));
   } else {
@@ -41,7 +42,7 @@ export function createPlayerBullet(x, y, pilot, charged = false, player = 0) {
   return bullets;
 }
 
-function makeBullet(x, y, w, h, speed, charged, player, damage) {
+function makeBullet(x, y, w, h, speed, charged, player, damage, drawFn = null) {
   return {
     type: 'playerBullet',
     alive: true,
@@ -50,6 +51,7 @@ function makeBullet(x, y, w, h, speed, charged, player, damage) {
     vx: speed,
     damage: charged ? 3 : 1,
     age: 0,
+    _drawFn: drawFn,
 
     update(delta) {
       this.x += this.vx * delta;
@@ -57,7 +59,8 @@ function makeBullet(x, y, w, h, speed, charged, player, damage) {
       if (this.x > 500) this.alive = false; // off screen right
     },
     draw(ctx) {
-      drawPlayerBeam(ctx, this.x, this.y, this.charged);
+      if (this._drawFn) this._drawFn(ctx, this.x, this.y);
+      else drawPlayerBeam(ctx, this.x, this.y, this.charged);
     },
   };
 }

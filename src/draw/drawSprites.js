@@ -142,6 +142,50 @@ export function drawAmyDeathAnim(ctx, cx, cy, ms) {
   return true;
 }
 
+// ── Amy: bullet sprite loader ─────────────────────────────────────────────────
+// Source: 12×7, lime-green chroma key. Content at rows 3–4, cols 0–11 (8 px
+// of actual data centred in the strip). Display at 2× → 24×4 canvas.
+let _amyBulletCache = null;
+
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image();
+    i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/amy_bullet.png';
+  });
+  if (!img) return;
+  const SW = 12, SH = 2, SY = 3, DW = 24, DH = 4;
+  const tmp = Object.assign(document.createElement('canvas'), { width: SW, height: SH });
+  const tc  = tmp.getContext('2d');
+  tc.drawImage(img, 0, SY, SW, SH, 0, 0, SW, SH);
+  const id = tc.getImageData(0, 0, SW, SH); const d = id.data;
+  for (let i = 0; i < d.length; i += 4) {
+    if (Math.abs(d[i]-AMY_BG[0]) + Math.abs(d[i+1]-AMY_BG[1]) + Math.abs(d[i+2]-AMY_BG[2]) <= AMY_BG_TOL) d[i+3] = 0;
+  }
+  tc.putImageData(id, 0, 0);
+  const oc  = Object.assign(document.createElement('canvas'), { width: DW, height: DH });
+  const c2d = oc.getContext('2d'); c2d.imageSmoothingEnabled = false;
+  c2d.drawImage(tmp, 0, 0, SW, SH, 0, 0, DW, DH);
+  _amyBulletCache = oc;
+}());
+
+/**
+ * Draw Amy's bullet sprite (24×4 at 2×). Falls back to procedural beam.
+ * Entity top-left (x, y) passed in; sprite centred on the 8×3 hitbox.
+ */
+export function drawAmyBullet(ctx, x, y) {
+  x = Math.round(x); y = Math.round(y);
+  if (_amyBulletCache) {
+    // Centre 24×4 sprite on entity centre (x+4, y+1.5) → draw at (x-8, y)
+    ctx.drawImage(_amyBulletCache, x - 8, y);
+    return;
+  }
+  // Procedural fallback — warm orange beam
+  ctx.fillStyle = '#D04800'; ctx.fillRect(x, y + 1, 8, 2);
+  ctx.fillStyle = '#F8E088'; ctx.fillRect(x + 4, y + 1, 3, 1);
+  ctx.fillStyle = '#F0F0F0'; ctx.fillRect(x + 6, y + 1, 2, 1);
+}
+
 // ── Player Ships ──────────────────────────────────────────────────────────────
 
 /** Amy: pilot sprite — chroma-keyed, pixel art 2× scaled.
