@@ -658,15 +658,14 @@ export function drawForcePod(ctx, x, y, state = 'attached', t = 0, level = 1) {
   if (ready) {
     let fi;
     if (level >= 3) {
-      // 4-frame layout: 0-1 idle, 2 flying, 3 returning
-      if (state === 'flying')                        fi = 2;
-      else if (state === 'returning')                fi = 3;
-      else                                           fi = Math.floor(t * 5) % 2;
+      // 4-frame layout: 0-2 pulsing idle, 3 = flying & returning
+      if (state === 'flying' || state === 'returning') fi = 3;
+      else                                             fi = Math.floor(t * 8) % 3;
     } else {
-      // 5-frame layout: 0-1 idle, 2 flying, 3-4 returning
-      if (state === 'flying')                        fi = 2;
-      else if (state === 'returning')                fi = 3 + (Math.floor(t * 8) % 2);
-      else                                           fi = Math.floor(t * 5) % 2;
+      // 5-frame layout: 0-2 pulsing idle, 3 = flying, 4 = returning
+      if (state === 'flying')         fi = 3;
+      else if (state === 'returning') fi = 4;
+      else                            fi = Math.floor(t * 8) % 3;
     }
     const frame = sheets[fi];
     ctx.drawImage(frame,

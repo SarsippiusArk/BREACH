@@ -166,6 +166,20 @@ class RTypeSystem extends WeaponSystem {
     else                  player.pitTop    = pit;
   }
 
+  /** Called when Rohan collects a forcePod power-up pickup. */
+  receiveForcePod(player, entityManager) {
+    if (player.forceRef?.alive) return;   // already equipped
+    player.forceCooldown = 0;
+    const pod = createForcePodEntity(
+      player.x + SHIP_W + 2,
+      player.y + SHIP_H / 2 - 7,
+      player.playerIdx,
+    );
+    entityManager.add(pod);
+    player.forceRef   = pod;
+    player.forceState = 'attached';
+  }
+
   trailColor() { return '#4466FF'; }
 }
 

@@ -20,6 +20,11 @@ export const LEVEL1_EVENTS = [
     { kind:'pod', worldOff: 0, y: CENTER, opts:{ drop:'rapid' } },
   ]},
 
+  // ── Force Pod pod — first acquisition opportunity (scroll ~600) ───────────
+  { triggerX: 600, type: 'wave', spawns: [
+    { kind: 'pod', worldOff: 0, y: CENTER, opts: { drop: 'forcePod' } },
+  ]},
+
   // ── Wave 1: V-formation drones ───────────────────────────────────────────
   { triggerX: 150, type: 'wave', spawns: [
     { kind:'drone', worldOff: 20, y: UPPER,   opts:{pattern:'straight'} },
@@ -89,6 +94,11 @@ export const LEVEL1_EVENTS = [
 
   // ── Mid-boss: Sentinel ───────────────────────────────────────────────────
   { triggerX: 2500, type: 'midboss' },
+
+  // ── Force Pod pod — post-midboss restoration (scroll ~2700) ────────────────
+  { triggerX: 2700, type: 'wave', spawns: [
+    { kind: 'pod', worldOff: 0, y: CENTER, opts: { drop: 'forcePod' } },
+  ]},
 
   // ── Power-Up Pod: special weapon ──────────────────────────────────────────
   { triggerX: 3300, type: 'wave', spawns: [

@@ -710,11 +710,12 @@ export function drawArmorCruiser(ctx, x, y, hp = 5, maxHp = 5) {
 
 export const PUP_W = 10, PUP_H = 10;
 const PUP_COLORS = {
-  speed:   ['#0092DB','#00DBFF'], rapid:   ['#DB6D00','#FFDB00'],
-  charge:  ['#B6B600','#FFFF00'], shield:  ['#0049DB','#00FFFF'],
-  special: ['#920092','#FF00FF'], life:    ['#B60000','#FF9200'],
+  speed:    ['#0092DB','#00DBFF'], rapid:    ['#DB6D00','#FFDB00'],
+  charge:   ['#B6B600','#FFFF00'], shield:   ['#0049DB','#00FFFF'],
+  special:  ['#920092','#FF00FF'], life:     ['#B60000','#FF9200'],
+  forcePod: ['#FF5500','#FFAA00'],
 };
-const PUP_LABELS = { speed:'S', rapid:'R', charge:'C', shield:'P', special:'+', life:'1' };
+const PUP_LABELS = { speed:'S', rapid:'R', charge:'C', shield:'P', special:'+', life:'1', forcePod:'F' };
 
 export function drawPowerUp(ctx, x, y, type, t = 0) {
   x = Math.round(x); y = Math.round(y);

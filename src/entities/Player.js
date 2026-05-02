@@ -84,7 +84,6 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
                          : Math.min(0,  this.upBankPhase + BANK_RATE * delta);
       this.x = Math.max(0, Math.min(GAME_W - SHIP_W, this.x + dx * spd * delta));
       this.y = Math.max(0, Math.min(GAME_H - SHIP_H, this.y + dy * spd * delta));
-      this.x = Math.min(this.x, GAME_W * 0.42);
 
       // Charge & fire
       this.fireTimer = Math.max(0, this.fireTimer - delta);

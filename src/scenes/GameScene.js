@@ -285,7 +285,11 @@ export class GameScene {
     checkGroups(powerups, this.#players, (pu, p) => {
       if (!p.alive) return;
       if (p.pilotId === 'amy') p.onPowerUpCollect?.();
-      applyPowerUp(p, pu.subtype);
+      if (pu.subtype === 'forcePod' && p.pilotId === 'rohan') {
+        p.ws.receiveForcePod(p, this.#entities);
+      } else {
+        applyPowerUp(p, pu.subtype);
+      }
       pu.alive = false;
       this.#noteStats.puCount++;
       this.#particles.sparkle(pu.x + pu.w/2, pu.y + pu.h/2, '#FFDD44');

@@ -15,8 +15,8 @@ const DRAW_MAP = {
 
 const DROP_TABLE = {
   drone:        [null, null, null, 'rapid', 'speed', null, null, 'special'],
-  frigate:      [null, 'rapid', 'charge', 'shield', 'special', null],
-  cruiser:      ['charge', 'shield', 'special', null, 'life', 'rapid'],
+  frigate:      [null, 'rapid', 'charge', 'shield', 'special', null, 'forcePod'],
+  cruiser:      ['charge', 'shield', 'special', null, 'life', 'rapid', 'forcePod'],
   rift_shard:   [null, null, null, 'rapid', null, null],
   phase_walker: [null, 'charge', 'shield', null, 'special', null],
   void_leech:   ['charge', 'shield', 'special', null, 'life', null],
