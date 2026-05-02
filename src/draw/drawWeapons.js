@@ -883,3 +883,68 @@ export function drawPitBeam(ctx, x, y, colour) {
   ctx.fillStyle = '#FFFFFF';
   ctx.fillRect(x, y, 28, 1);
 }
+
+// ── Rohan: Anti-Air Laser sprites ────────────────────────────────────────────
+// rohan_aa_laser.png  77×46 — double ring (main shot)  displayed at 40×24
+// rohan_aa_ring.png   57×56 — single ring (pit shot)   displayed at 22×22
+// Green chroma RGB(34,177,76) tol=30 + black stripped.
+//
+// DW/DH = display size stored in the off-screen canvas.
+const _RING_DW = 22, _RING_DH = 22;
+const _LASER_DW = 40, _LASER_DH = 24;
+let _aaRingFrame  = null;
+let _aaLaserFrame = null;
+
+(async function () {
+  function _loadAA(src, sw, sh, dw, dh, setter) {
+    const img = new Image();
+    img.onload = () => {
+      const tmp = Object.assign(document.createElement('canvas'), { width: sw, height: sh });
+      const tc  = tmp.getContext('2d');
+      tc.drawImage(img, 0, 0);
+      const id = tc.getImageData(0, 0, sw, sh); const d = id.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const r = d[i], g = d[i+1], b = d[i+2];
+        if (Math.abs(r-34)+Math.abs(g-177)+Math.abs(b-76) <= 30
+            || (r < 15 && g < 15 && b < 15)) d[i+3] = 0;
+      }
+      tc.putImageData(id, 0, 0);
+      const oc  = Object.assign(document.createElement('canvas'), { width: dw, height: dh });
+      const c2d = oc.getContext('2d'); c2d.imageSmoothingEnabled = false;
+      c2d.drawImage(tmp, 0, 0, sw, sh, 0, 0, dw, dh);
+      setter(oc);
+    };
+    img.onerror = () => {};
+    img.src = src;
+  }
+  _loadAA('./assets/rohan_aa_laser.png', 77, 46, _LASER_DW, _LASER_DH, f => { _aaLaserFrame = f; });
+  _loadAA('./assets/rohan_aa_ring.png',  57, 56, _RING_DW,  _RING_DH,  f => { _aaRingFrame  = f; });
+}());
+
+/** Draw the double-ring anti-air laser shot, centred on (cx, cy). */
+export function drawAALaser(ctx, cx, cy) {
+  cx = Math.round(cx); cy = Math.round(cy);
+  if (_aaLaserFrame) {
+    ctx.drawImage(_aaLaserFrame, cx - (_LASER_DW >> 1), cy - (_LASER_DH >> 1));
+    return;
+  }
+  // Procedural fallback: two overlapping blue+red rings
+  ctx.strokeStyle = '#2299FF'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.ellipse(cx - 8, cy, 10, 8, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle = '#FF3322';
+  ctx.beginPath(); ctx.ellipse(cx + 8, cy, 10, 8, 0, 0, Math.PI * 2); ctx.stroke();
+}
+
+/** Draw a single anti-air ring (fired from a pit), centred on (cx, cy). */
+export function drawAARing(ctx, cx, cy) {
+  cx = Math.round(cx); cy = Math.round(cy);
+  if (_aaRingFrame) {
+    ctx.drawImage(_aaRingFrame, cx - (_RING_DW >> 1), cy - (_RING_DH >> 1));
+    return;
+  }
+  // Procedural fallback: single blue+red ring
+  ctx.strokeStyle = '#2299FF'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.ellipse(cx, cy - 3, 8, 4, 0, 0, Math.PI); ctx.stroke();
+  ctx.strokeStyle = '#FF3322';
+  ctx.beginPath(); ctx.ellipse(cx, cy + 3, 8, 4, 0, Math.PI, 0); ctx.stroke();
+}

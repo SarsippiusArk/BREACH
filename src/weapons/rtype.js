@@ -1,7 +1,7 @@
 import { WeaponSystem } from './WeaponSystem.js';
 import { SHIP_W, SHIP_H } from '../draw/drawSprites.js';
 import { drawForcePod } from '../draw/drawWeapons.js';
-import { createPlayerBullet, createPartialWaveCannon, createWaveCannon, createPitLaser } from '../entities/PlayerBullet.js';
+import { createPlayerBullet, createPartialWaveCannon, createWaveCannon, createAntiAirLaser, createPitRing } from '../entities/PlayerBullet.js';
 import { createShipPit } from '../entities/ShipPit.js';
 
 // ── Force Pod entity ──────────────────────────────────────────────────────────
@@ -107,6 +107,16 @@ class RTypeSystem extends WeaponSystem {
         player.bulletsToSpawn.push(...createPartialWaveCannon(bx, by, player.playerIdx));
       }
     } else {
+      // Anti-air mode: double ring replaces standard shot; each pit fires a single ring
+      if (player.weaponType === 'antiAir') {
+        const pb = player.pitBottom;
+        const pt = player.pitTop;
+        player.bulletsToSpawn.push(...createAntiAirLaser(bx, by, player.playerIdx));
+        if (pb?.alive) player.bulletsToSpawn.push(...createPitRing(pb.x + 14, pb.y + 6, player.playerIdx));
+        if (pt?.alive) player.bulletsToSpawn.push(...createPitRing(pt.x + 14, pt.y + 6, player.playerIdx));
+        return;
+      }
+
       // Ship fires forward
       player.bulletsToSpawn.push(...createPlayerBullet(bx, by, 'rohan', false, player.playerIdx));
 
@@ -118,15 +128,7 @@ class RTypeSystem extends WeaponSystem {
         player.bulletsToSpawn.push(...createPlayerBullet(fx, fy, 'rohan', false, player.playerIdx));
       }
 
-      // Anti-air laser: pits fire coloured beams alongside the main shot
-      if (player.weaponType === 'antiAir') {
-        const pb = player.pitBottom;
-        const pt = player.pitTop;
-        if (pb?.alive)
-          player.bulletsToSpawn.push(...createPitLaser(pb.x + 12, pb.y + 6, '#FF3322', player.playerIdx));
-        if (pt?.alive)
-          player.bulletsToSpawn.push(...createPitLaser(pt.x + 12, pt.y + 6, '#4488FF', player.playerIdx));
-      }
+      // Standard mode pits don't fire extra shots
     }
   }
 

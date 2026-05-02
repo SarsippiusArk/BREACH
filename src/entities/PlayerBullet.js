@@ -8,7 +8,7 @@ import {
   drawAxelayPellet, drawNapalmPod, drawSpiralBomb,
   drawDariusShot, drawZoneBomb,
   drawBeanShot, drawThunderball, drawLiminaeOption,
-  drawPitBeam,
+  drawPitBeam, drawAALaser, drawAARing,
 } from '../draw/drawWeapons.js';
 
 const BEAM_W = 8, BEAM_H = 3;
@@ -564,5 +564,33 @@ export function createPitLaser(x, y, colour, player = 0) {
     _colour: colour,
     update(d) { this.x += this.vx * d; this.age += d; if (this.x > 520) this.alive = false; },
     draw(ctx) { drawPitBeam(ctx, this.x, this.y + 1, this._colour); },
+  }];
+}
+
+// ── Anti-Air Laser — double ring fired from the ship nose ─────────────────────
+const _AA_W = 34, _AA_H = 18;   // collision hitbox (slightly inside the 40×24 display)
+
+export function createAntiAirLaser(x, y, player = 0) {
+  return [{
+    type: 'playerBullet', alive: true,
+    x: x - _AA_W / 2, y: y - _AA_H / 2,
+    w: _AA_W, h: _AA_H, player,
+    charged: false, damage: 3, vx: 280, vy: 0, age: 0, piercing: false,
+    update(d) { this.x += this.vx * d; this.age += d; if (this.x > 490) this.alive = false; },
+    draw(ctx) { drawAALaser(ctx, this.x + _AA_W / 2, this.y + _AA_H / 2); },
+  }];
+}
+
+// ── Anti-Air Ring — single ring fired from each equipped pit ─────────────────
+const _RING_W = 16, _RING_H = 16;  // collision hitbox (inside the 22×22 display)
+
+export function createPitRing(x, y, player = 0) {
+  return [{
+    type: 'playerBullet', alive: true,
+    x: x - _RING_W / 2, y: y - _RING_H / 2,
+    w: _RING_W, h: _RING_H, player,
+    charged: false, damage: 2, vx: 280, vy: 0, age: 0, piercing: false,
+    update(d) { this.x += this.vx * d; this.age += d; if (this.x > 490) this.alive = false; },
+    draw(ctx) { drawAARing(ctx, this.x + _RING_W / 2, this.y + _RING_H / 2); },
   }];
 }
