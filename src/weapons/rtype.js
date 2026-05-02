@@ -1,7 +1,7 @@
 import { WeaponSystem } from './WeaponSystem.js';
 import { SHIP_W, SHIP_H } from '../draw/drawSprites.js';
 import { drawForcePod } from '../draw/drawWeapons.js';
-import { createPlayerBullet, createWaveCannon } from '../entities/PlayerBullet.js';
+import { createPlayerBullet, createPartialWaveCannon, createWaveCannon } from '../entities/PlayerBullet.js';
 
 // ── Force Pod entity ──────────────────────────────────────────────────────────
 function createForcePodEntity(x, y, player = 0) {
@@ -54,7 +54,12 @@ class RTypeSystem extends WeaponSystem {
 
   shoot(player, bx, by, charged) {
     if (charged) {
-      player.bulletsToSpawn.push(...createWaveCannon(bx, by, player.playerIdx));
+      // 100% charge → full Wave Cannon; partial (50–99%) → lighter beam
+      if (player.chargeLevel >= 1.0) {
+        player.bulletsToSpawn.push(...createWaveCannon(bx, by, player.playerIdx));
+      } else {
+        player.bulletsToSpawn.push(...createPartialWaveCannon(bx, by, player.playerIdx));
+      }
     } else {
       player.bulletsToSpawn.push(...createPlayerBullet(bx, by, 'rohan', false, player.playerIdx));
     }

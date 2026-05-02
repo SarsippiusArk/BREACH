@@ -3,7 +3,7 @@ import { drawPlayerBeam, drawAmyBullet, drawAmyDoubleBullet } from '../draw/draw
 import {
   drawVulcanBullet, drawDoubleShot, drawLaserBeam, drawGroundMissile, drawGroundMissileAnim, drawAirMissile, drawBombExplosion,
   drawRippleBullet,
-  drawWaveCannon, drawMacrossMissile, drawHyperCannon,
+  drawWaveCannon, drawPartialWaveCannon, drawMacrossMissile, drawHyperCannon,
   drawAxelayPellet, drawNapalmPod, drawSpiralBomb,
   drawDariusShot, drawZoneBomb,
   drawBeanShot, drawThunderball, drawLiminaeOption,
@@ -233,6 +233,16 @@ export function createLaserBeam(x, y, player = 0) {
 }
 
 // ── Rohan — R-Type Wave Cannon ────────────────────────────────────────────────
+
+/** Rohan: Partial Wave Cannon — medium piercing beam (50-99% charge) */
+export function createPartialWaveCannon(x, y, player = 0) {
+  return [{
+    type: 'playerBullet', alive: true, x, y: y - 5, w: 24, h: 10, player,
+    charged: true, damage: 4, vx: 240, vy: 0, age: 0, piercing: true,
+    update(d) { this.x+=this.vx*d; this.age+=d; if(this.x>520)this.alive=false; },
+    draw(ctx) { drawPartialWaveCannon(ctx, this.x + 16, this.y + 5); },
+  }];
+}
 
 /** Wave Cannon: massive wide piercing beam */
 export function createWaveCannon(x, y, player = 0) {

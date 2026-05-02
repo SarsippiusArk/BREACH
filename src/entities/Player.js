@@ -100,7 +100,7 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
         this.chargeLevel  = Math.min(this.chargeTimer / 1.2, 1);
         this.isCharging   = this.chargeTimer > 0.25;
       } else if (this.isCharging) {
-        const charged = this.chargeLevel >= 0.85;
+        const charged = this.chargeLevel >= 0.5;  // 50%+ triggers a charge shot
         this._fire(charged ? 'charge' : 'rapid');
         this.chargeTimer = 0; this.chargeLevel = 0; this.isCharging = false;
       } else if (input.isPressed(pi, 'fire')) {

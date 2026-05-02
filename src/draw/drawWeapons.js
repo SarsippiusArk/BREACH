@@ -487,6 +487,61 @@ export function drawWaveCannon(ctx, x, y) {
   ctx.fillStyle = '#CCFFEE'; ctx.fillRect(x + 1, y, 28, 2);
 }
 
+// ── Rohan: Partial Wave Cannon sprite loader ──────────────────────────────────
+// Source: 65×19.  2 frames: sx=[0, 33], sw=32, sh=19.
+// Purple chroma RGB(163,73,164) ±20 and black (r<15,g<15,b<15) stripped.
+// Scaled 2× → 64×38 per frame.
+const _ROHAN_PBG     = [163, 73, 164];
+const _ROHAN_PBG_TOL = 20;
+const _partialBeamFrames = [];
+
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/rohan_partial_beam.png';
+  });
+  if (!img) return;
+  for (const sx of [0, 33]) {
+    const SW = 32, SH = 19;
+    const tmp = Object.assign(document.createElement('canvas'), { width: SW, height: SH });
+    const tc  = tmp.getContext('2d');
+    tc.drawImage(img, sx, 0, SW, SH, 0, 0, SW, SH);
+    const id = tc.getImageData(0, 0, SW, SH); const d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i], g = d[i+1], b = d[i+2];
+      if (Math.abs(r-_ROHAN_PBG[0]) + Math.abs(g-_ROHAN_PBG[1]) + Math.abs(b-_ROHAN_PBG[2]) <= _ROHAN_PBG_TOL
+          || (r < 15 && g < 15 && b < 15)) { d[i+3] = 0; }
+    }
+    tc.putImageData(id, 0, 0);
+    const oc  = Object.assign(document.createElement('canvas'), { width: SW*2, height: SH*2 });
+    const c2d = oc.getContext('2d'); c2d.imageSmoothingEnabled = false;
+    c2d.drawImage(tmp, 0, 0, SW, SH, 0, 0, SW*2, SH*2);
+    _partialBeamFrames.push(oc);
+  }
+}());
+
+/**
+ * Draw one frame of Rohan's partial Wave Cannon beam, centred on (cx, cy).
+ * Alternates between 2 sprite frames at ~8 fps for an energy-pulse look.
+ * Falls back to a procedural teal beam if the sprite has not yet loaded.
+ */
+export function drawPartialWaveCannon(ctx, cx, cy) {
+  cx = Math.round(cx); cy = Math.round(cy);
+  if (_partialBeamFrames.length === 2) {
+    const fi    = Math.floor(Date.now() / 120) % 2;
+    const frame = _partialBeamFrames[fi];
+    ctx.drawImage(frame, Math.round(cx - frame.width / 2), Math.round(cy - frame.height / 2));
+    return;
+  }
+  // Procedural fallback — thin teal beam
+  ctx.globalAlpha = 0.4;
+  ctx.fillStyle = '#00FFCC'; ctx.fillRect(cx - 16, cy - 5, 32, 10);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#004433'; ctx.fillRect(cx - 16, cy - 3, 32, 6);
+  ctx.fillStyle = '#00BBAA'; ctx.fillRect(cx - 16, cy - 2, 32, 4);
+  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(cx - 16, cy - 1, 32, 2);
+}
+
 /** Rohan: Force pod (attached = still, flying = trailing sparks) */
 export function drawForcePod(ctx, x, y, state = 'attached', t = 0) {
   x = Math.round(x); y = Math.round(y);
