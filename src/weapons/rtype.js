@@ -1,21 +1,17 @@
 import { WeaponSystem } from './WeaponSystem.js';
 import { SHIP_W, SHIP_H } from '../draw/drawSprites.js';
 import { drawForcePod } from '../draw/drawWeapons.js';
-import { createPlayerBullet, createPartialWaveCannon, createWaveCannon } from '../entities/PlayerBullet.js';
+import { createPlayerBullet, createPartialWaveCannon, createWaveCannon, createPitLaser } from '../entities/PlayerBullet.js';
+import { createShipPit } from '../entities/ShipPit.js';
 
 // ── Force Pod entity ──────────────────────────────────────────────────────────
-// Super R-Type behaviour:
-//   'attached'  – docked at ship nose; absorbs enemy fire; fires with ship
-//   'flying'    – just launched; decelerates and transitions → 'floating'
-//   'floating'  – hovering in place; absorbs bullets; still damages enemies it touches
-//   'returning' – flying back to ship; reattaches on contact
 function createForcePodEntity(x, y, player = 0, level = 1) {
   return {
     type: 'forcePod',
     alive: true,
     x, y, w: 14, h: 14,
     player,
-    level,             // 1 or 2 — selects sprite sheet in drawForcePod
+    level,
     vx: 0, vy: 0,
     state: 'attached',
     damage: 4,
@@ -28,7 +24,6 @@ function createForcePodEntity(x, y, player = 0, level = 1) {
       this.age += delta;
 
       if (this.state === 'flying') {
-        // Decelerate rapidly from launch speed until stopped
         this.vx = Math.max(0, this.vx - 700 * delta);
         this.x += this.vx * delta;
         if (this.vx <= 1 || this.x > 465) {
@@ -40,15 +35,13 @@ function createForcePodEntity(x, y, player = 0, level = 1) {
         const dy = this._targetY - this.y;
         const dist = Math.hypot(dx, dy);
         if (dist < 12) {
-          this.state = 'attached';   // weapon system re-snaps position next frame
+          this.state = 'attached';
         } else {
           const spd = Math.min(480, Math.max(240, dist * 4));
           this.x += (dx / dist) * spd * delta;
           this.y += (dy / dist) * spd * delta;
         }
       }
-      // 'attached'  — position is pinned by weapon system each frame
-      // 'floating'  — stationary; no movement needed
 
       if (this.x > 530 || this.x < -60) this.alive = false;
     },
@@ -62,36 +55,47 @@ function createForcePodEntity(x, y, player = 0, level = 1) {
 // ── R-Type weapon system ──────────────────────────────────────────────────────
 class RTypeSystem extends WeaponSystem {
   init(player) {
-    player.forceState    = 'none';   // 'none' | 'attached' | 'flying' | 'floating' | 'returning'
+    player.forceState    = 'none';
     player.forceCooldown = 0;
     player.forceRef      = null;
+    player.pitBottom     = null;   // first pit acquired (below ship)
+    player.pitTop        = null;   // second pit acquired (above ship)
+    player.weaponType    = 'standard';  // 'standard' | 'antiAir'
   }
 
   update(delta, player) {
     if (player.forceCooldown > 0) player.forceCooldown -= delta;
 
     const pod = player.forceRef;
-    if (!pod) return;
-
-    if (!pod.alive) {
-      // Force was destroyed (went off-screen)
-      player.forceState    = 'none';
-      player.forceCooldown = 3;
-      player.forceRef      = null;
-      return;
+    if (pod) {
+      if (!pod.alive) {
+        player.forceState    = 'none';
+        player.forceCooldown = 3;
+        player.forceRef      = null;
+      } else {
+        player.forceState = pod.state;
+        if (pod.state === 'attached') {
+          pod.x = player.x + SHIP_W + 2;
+          pod.y = player.y + SHIP_H / 2 - 7;
+        } else if (pod.state === 'returning') {
+          pod._targetX = player.x + SHIP_W + 2;
+          pod._targetY = player.y + SHIP_H / 2 - 7;
+        }
+      }
     }
 
-    // Sync state so player object matches pod
-    player.forceState = pod.state;
-
-    if (pod.state === 'attached') {
-      // Pin Force to the ship nose
-      pod.x = player.x + SHIP_W + 2;
-      pod.y = player.y + SHIP_H / 2 - 7;
-    } else if (pod.state === 'returning') {
-      // Give the pod a live target to home toward
-      pod._targetX = player.x + SHIP_W + 2;
-      pod._targetY = player.y + SHIP_H / 2 - 7;
+    // Pin pits to ship — bottom pit sits below ship centre, top above
+    if (player.pitBottom?.alive) {
+      player.pitBottom.x = Math.round(player.x + SHIP_W / 2 - 6);
+      player.pitBottom.y = Math.round(player.y + SHIP_H + 2);
+    } else if (player.pitBottom && !player.pitBottom.alive) {
+      player.pitBottom = null;
+    }
+    if (player.pitTop?.alive) {
+      player.pitTop.x = Math.round(player.x + SHIP_W / 2 - 6);
+      player.pitTop.y = Math.round(player.y - 14);
+    } else if (player.pitTop && !player.pitTop.alive) {
+      player.pitTop = null;
     }
   }
 
@@ -105,12 +109,23 @@ class RTypeSystem extends WeaponSystem {
     } else {
       // Ship fires forward
       player.bulletsToSpawn.push(...createPlayerBullet(bx, by, 'rohan', false, player.playerIdx));
+
       // Force also fires from its position when attached
       const pod = player.forceRef;
       if (pod?.alive && pod.state === 'attached') {
         const fx = pod.x + pod.w;
         const fy = pod.y + pod.h / 2;
         player.bulletsToSpawn.push(...createPlayerBullet(fx, fy, 'rohan', false, player.playerIdx));
+      }
+
+      // Anti-air laser: pits fire coloured beams alongside the main shot
+      if (player.weaponType === 'antiAir') {
+        const pb = player.pitBottom;
+        const pt = player.pitTop;
+        if (pb?.alive)
+          player.bulletsToSpawn.push(...createPitLaser(pb.x + 12, pb.y + 6, '#FF3322', player.playerIdx));
+        if (pt?.alive)
+          player.bulletsToSpawn.push(...createPitLaser(pt.x + 12, pt.y + 6, '#4488FF', player.playerIdx));
       }
     }
   }
@@ -119,7 +134,6 @@ class RTypeSystem extends WeaponSystem {
     const pod = player.forceRef;
 
     if (player.forceState === 'none' && player.forceCooldown <= 0) {
-      // Summon new Force and attach to ship nose
       const newPod = createForcePodEntity(
         player.x + SHIP_W + 2,
         player.y + SHIP_H / 2 - 7,
@@ -130,17 +144,24 @@ class RTypeSystem extends WeaponSystem {
       player.forceState = 'attached';
 
     } else if (pod?.alive && pod.state === 'attached') {
-      // Launch Force forward — it will decelerate and float
       pod.vx    = 420;
       pod.state = 'flying';
       player.forceState = 'flying';
 
     } else if (pod?.alive && (pod.state === 'floating' || pod.state === 'flying')) {
-      // Recall Force back to ship
       pod.state = 'returning';
       player.forceState = 'returning';
     }
-    // 'returning' state: ignore button press — wait for pod to arrive
+  }
+
+  /** Assign a newly collected pit to the appropriate slot (bottom first, then top). */
+  acquirePit(player, entityManager) {
+    if (player.pitBottom?.alive && player.pitTop?.alive) return; // already have both
+    const pos = (!player.pitBottom || !player.pitBottom.alive) ? 'bottom' : 'top';
+    const pit = createShipPit(player.x, player.y, pos, player.playerIdx);
+    entityManager.add(pit);
+    if (pos === 'bottom') player.pitBottom = pit;
+    else                  player.pitTop    = pit;
   }
 
   trailColor() { return '#4466FF'; }

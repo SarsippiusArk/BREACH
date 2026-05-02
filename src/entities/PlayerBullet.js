@@ -8,6 +8,7 @@ import {
   drawAxelayPellet, drawNapalmPod, drawSpiralBomb,
   drawDariusShot, drawZoneBomb,
   drawBeanShot, drawThunderball, drawLiminaeOption,
+  drawPitBeam,
 } from '../draw/drawWeapons.js';
 
 const BEAM_W = 8, BEAM_H = 3;
@@ -550,5 +551,18 @@ export function createLiminaeOptionShot(x, y, player = 0) {
     charged: false, damage: 1, vx: 360, vy: 0, age: 0, piercing: false,
     update(d) { this.x+=this.vx*d; this.age+=d; if(this.x>520||this.age>1.5)this.alive=false; },
     draw(ctx) { drawBeanShot(ctx, this.x, this.y); },
+  }];
+}
+
+/** Rohan: thin forward beam fired from a pit (anti-air laser mode).
+ *  colour = '#FF3322' (bottom/red) or '#4488FF' (top/blue) */
+export function createPitLaser(x, y, colour, player = 0) {
+  return [{
+    type: 'playerBullet', alive: true,
+    x, y: y - 1, w: 32, h: 3, player,
+    charged: false, damage: 2, vx: 400, vy: 0, age: 0, piercing: false,
+    _colour: colour,
+    update(d) { this.x += this.vx * d; this.age += d; if (this.x > 520) this.alive = false; },
+    draw(ctx) { drawPitBeam(ctx, this.x, this.y + 1, this._colour); },
   }];
 }

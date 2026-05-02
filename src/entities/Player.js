@@ -143,24 +143,25 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
 
     die() {
       this.lives--;
-      // Record explosion centre before clearing position
       this.deathAnimStart = Date.now();
       this.deathAnimCX    = this.x + SHIP_W / 2;
       this.deathAnimCY    = this.y + SHIP_H / 2;
+      // Clear pits and weapon mode — must re-acquire after respawn
+      if (this.pitBottom) { this.pitBottom.alive = false; this.pitBottom = null; }
+      if (this.pitTop)    { this.pitTop.alive    = false; this.pitTop    = null; }
+      this.weaponType = 'standard';
       if (this.lives > 0) {
-        // Use respawning flag so the entity stays in the EntityManager's list
-        // (alive stays true — setting alive=false causes pruning and permanent disappearance)
         this.respawning = true;
-        this.invincibleTimer = 999; // block damage during the respawn window
+        this.invincibleTimer = 999;
         setTimeout(() => {
           this.x = startX;
           this.y = startY;
           this.hp = this.maxHp;
-          this.invincibleTimer = 3.0; // post-spawn flashing invincibility
+          this.invincibleTimer = 3.0;
           this.respawning = false;
-        }, 800); // 800ms: just after Amy's 750ms death animation ends
+        }, 800);
       } else {
-        this.alive = false;           // truly dead — no lives left
+        this.alive = false;
       }
     },
 
@@ -195,7 +196,7 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
             fxX = pod.x + pod.w;          // Force Pod right edge
             fxY = pod.y + pod.h / 2;     // Force Pod vertical centre
           } else {
-            fxX = this.x + ROHAN_NOSE_OX; // visual ship nose (sprite extends to x+45)
+            fxX = this.x + ROHAN_NOSE_OX; // visual ship nose (33px sprite at x-4 → nose at x+29)
             fxY = this.y + ROHAN_NOSE_OY; // vertical centre of ship sprite
           }
           drawRohanChargeFx(ctx, fxX, fxY, this.chargeLevel);

@@ -4,7 +4,7 @@ import { loadAtlas, atlasFrame } from '../engine/AtlasLoader.js';
 export const SHIP_W = 24;
 export const SHIP_H = 12;
 // Visual nose offsets from entity.x / entity.y — sprite is 66×42 centred on hitbox
-export const ROHAN_NOSE_OX = 33;   // entity.x + 33 ≈ visual gun-tip of 66px ship sprite
+export const ROHAN_NOSE_OX = 29;   // entity.x + 29 = visual gun-tip of 33px ship sprite (sprite left edge x-4, width 33)
 export const ROHAN_NOSE_OY = 6;    // entity.y + 6  = vertical centre of ship sprite
 
 // ── Amy sprites — chroma-key colour: RGB(128,255,128) lime green ────────────
@@ -397,11 +397,8 @@ const _rohanChargeFxCache = [];
           || (r < 15 && g < 15 && b < 15)) d[i+3] = 0;
     }
     tc.putImageData(id, 0, 0);
-    const DW = SW * 2, DH = SH * 2;
-    const oc  = Object.assign(document.createElement('canvas'), { width: DW, height: DH });
-    const c2d = oc.getContext('2d'); c2d.imageSmoothingEnabled = false;
-    c2d.drawImage(tmp, 0, 0, SW, SH, 0, 0, DW, DH);
-    _rohanChargeFxCache.push(oc);
+    // Store at 1× (17×27) — ship is 33×21, so same-scale orb looks natural
+    _rohanChargeFxCache.push(tmp);
   }
 }());
 

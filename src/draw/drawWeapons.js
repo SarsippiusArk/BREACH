@@ -829,3 +829,57 @@ export function drawLiminaeOption(ctx, x, y, t = 0) {
   ctx.globalAlpha = 1;
   ctx.restore();
 }
+
+// ── Rohan: Ship Pit sprite sheet (rohan_pits.png, 255×20, 12 frames) ──────────
+// Content: 12×12 px per frame at y=5, green chroma (34,177,76) tol=30.
+// Displayed at 2× = 24×24. Frames 0-1 = idle; 2-9 = hit-flash arc; 10-11 = idle return.
+const PIT_SX = [4, 25, 46, 68, 91, 114, 135, 155, 176, 196, 216, 238];
+const _pitFrames = [];
+
+(async function () {
+  const img = await new Promise(res => {
+    const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = './assets/rohan_pits.png';
+  });
+  if (!img) return;
+  for (const sx of PIT_SX) {
+    const oc  = Object.assign(document.createElement('canvas'), { width: 24, height: 24 });
+    const c2d = oc.getContext('2d');
+    c2d.imageSmoothingEnabled = false;
+    c2d.drawImage(img, sx, 5, 12, 12, 0, 0, 24, 24);
+    const id = c2d.getImageData(0, 0, 24, 24); const d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i], g = d[i+1], b = d[i+2];
+      if (Math.abs(r-34)+Math.abs(g-177)+Math.abs(b-76) <= 30
+          || (r < 15 && g < 15 && b < 15)) d[i+3] = 0;
+    }
+    c2d.putImageData(id, 0, 0);
+    _pitFrames.push(oc);
+  }
+}());
+
+/** Draw one pit sprite centred on (cx, cy). fi = frame index 0–11. */
+export function drawShipPit(ctx, cx, cy, fi) {
+  cx = Math.round(cx); cy = Math.round(cy);
+  if (_pitFrames.length === 12) {
+    const frame = _pitFrames[Math.min(11, Math.max(0, fi))];
+    ctx.drawImage(frame, cx - 12, cy - 12);
+    return;
+  }
+  // Procedural fallback — small grey circle
+  ctx.save();
+  ctx.fillStyle = '#8899AA';
+  ctx.beginPath(); ctx.arc(cx, cy, 8, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+/** Thin forward beam fired from a pit (anti-air laser mode). */
+export function drawPitBeam(ctx, x, y, colour) {
+  x = Math.round(x); y = Math.round(y);
+  ctx.globalAlpha = 0.9;
+  ctx.fillStyle = colour;
+  ctx.fillRect(x, y - 1, 32, 3);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(x, y, 28, 1);
+}

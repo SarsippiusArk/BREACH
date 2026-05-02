@@ -1,5 +1,7 @@
 import { drawPowerUp, PUP_W, PUP_H } from '../draw/drawSprites.js';
 import { GAME_H } from '../constants.js';
+import { createPitPickup } from '../entities/ShipPit.js';
+export { createPitPickup };
 
 /**
  * Create a power-up entity.
@@ -54,8 +56,9 @@ export function applyPowerUp(player, type) {
     case 'special':
       player.specialAmmo = Math.min(player.specialAmmo + 2, player.maxSpecial);
       break;
-    case 'life':
-      player.lives = Math.min(player.lives + 1, 9);
+    case 'antiAir':
+      player.weaponType = 'antiAir';
       break;
+    case 'life':      player.lives = Math.min(player.lives + 1, 9); break;
   }
 }

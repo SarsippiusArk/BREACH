@@ -182,6 +182,8 @@ export class GameScene {
     for (const e of this.#entities.getGroup('powerup'))      e.update?.(delta);
     for (const e of this.#entities.getGroup('musicNote'))    e.update?.(delta);
     for (const e of this.#entities.getGroup('forcePod'))     e.update?.(delta);
+    for (const e of this.#entities.getGroup('shipPit'))      e.update?.(delta);
+    for (const e of this.#entities.getGroup('pitPickup'))    e.update?.(delta);
     for (const e of this.#entities.getGroup('bell'))         e.update?.(delta);
     this.#particles.update(delta);
 
@@ -270,6 +272,15 @@ export class GameScene {
       e.takeDamage?.(99);
     });
 
+    // Pit pickups → players
+    const pitPickups = this.#entities.getGroup('pitPickup');
+    checkGroups(pitPickups, this.#players, (pu, p) => {
+      if (!p.alive || p.respawning) return;
+      if (p.pilotId === 'rohan') p.ws.acquirePit(p, this.#entities);
+      pu.alive = false;
+      this.#audio.playSound('powerup');
+    });
+
     // Power-ups → players
     checkGroups(powerups, this.#players, (pu, p) => {
       if (!p.alive) return;
@@ -342,6 +353,16 @@ export class GameScene {
             } else this.#audio.playSound('hit');
           }
         }
+      }
+    }
+
+    // Ship pits absorb enemy bullets
+    const shipPits = this.#entities.getGroup('shipPit');
+    for (const pit of shipPits) {
+      if (!pit.alive) continue;
+      for (const b of eBullets) {
+        if (!b.alive) continue;
+        if (aabb(pit, b)) { b.alive = false; pit.absorbBullet(); }
       }
     }
   }
@@ -420,7 +441,7 @@ export class GameScene {
     drawBackground(ctx, this.#camera.scrollX, this.#loader.theme);
 
     // Entities — all positions are screen-space, draw directly
-    for (const type of ['powerup','musicNote','enemy','boss','playerBullet','forcePod','bell','player','enemyBullet']) {
+    for (const type of ['powerup','pitPickup','musicNote','enemy','boss','playerBullet','forcePod','shipPit','bell','player','enemyBullet']) {
       for (const e of this.#entities.getGroup(type)) {
         try {
           e.draw?.(ctx);
