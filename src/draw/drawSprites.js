@@ -1037,3 +1037,75 @@ export function drawRohanChargeFx(ctx, nx, ny, chargeLevel) {
     ctx.beginPath(); ctx.arc(nx, ny, r, 0, Math.PI * 2); ctx.fill();
   }
 }
+
+/** Val Cruz: battle-hardened military fighter — wide hull, forward cannons, crimson */
+export function drawValShip(ctx, x, y, pal, invincible) {
+  if (invincible && Math.floor(Date.now() / 80) % 2) return;
+  x = Math.round(x); y = Math.round(y);
+  const [m, li, ck] = pal || ['#881122', '#CC2233', '#FF6677', '#FF4400'];
+  const eg = Math.floor(Date.now() / 100) % 2 ? '#FF8800' : '#FFCC00';
+  // Dual engine exhausts (battle-worn, slightly uneven)
+  ctx.fillStyle = eg;
+  ctx.fillRect(x, y + 2, 2, 3); ctx.fillRect(x, y + 8, 2, 2);
+  ctx.fillStyle = '#FF4400';
+  ctx.fillRect(x + 1, y + 2, 2, 3); ctx.fillRect(x + 1, y + 8, 2, 2);
+  // Wide flat fuselage — military slab
+  ctx.fillStyle = '#441122';
+  ctx.fillRect(x + 2, y, 4, 2); ctx.fillRect(x + 2, y + 10, 4, 2);
+  ctx.fillStyle = m;
+  ctx.fillRect(x + 3, y + 1, 15, 10);   // main body
+  ctx.fillRect(x + 6, y, 8, 12);        // centre swell
+  // Armour highlight ridge
+  ctx.fillStyle = li;
+  ctx.fillRect(x + 6, y + 4, 7, 4);
+  // Battle scars / panel lines
+  ctx.fillStyle = '#331122';
+  ctx.fillRect(x + 5, y + 1, 1, 10);
+  ctx.fillRect(x + 11, y + 1, 1, 10);
+  // Cockpit — armoured, tinted
+  ctx.fillStyle = '#220011'; ctx.fillRect(x + 14, y + 4, 3, 4);
+  ctx.fillStyle = ck;         ctx.fillRect(x + 15, y + 4, 1, 4);
+  ctx.fillStyle = '#FFCCDD';  ctx.fillRect(x + 15, y + 4, 1, 1);
+  // Twin heavy cannon barrels
+  ctx.fillStyle = '#884455';
+  ctx.fillRect(x + 17, y + 1, 8, 3); ctx.fillRect(x + 17, y + 8, 8, 3);
+  ctx.fillStyle = '#CC6677';
+  ctx.fillRect(x + 23, y + 1, 2, 2); ctx.fillRect(x + 23, y + 8, 2, 2);
+}
+
+/** Ezra Obi: precision science-fighter — angular, dual-polarity aura, indigo */
+export function drawEzraShip(ctx, x, y, pal, invincible) {
+  if (invincible && Math.floor(Date.now() / 80) % 2) return;
+  x = Math.round(x); y = Math.round(y);
+  const [m, li, ck] = pal || ['#330066', '#7733EE', '#BB88FF', '#44FFCC'];
+  const t  = Date.now() * 0.005;
+  const eg = Math.floor(t * 3) % 2 ? '#7733EE' : '#3388FF'; // alternates red↔blue polarity
+  // Engine — polarity-pulsing colour
+  ctx.fillStyle = eg;
+  ctx.fillRect(x, y + 3, 2, 6);
+  ctx.fillStyle = '#220044';
+  ctx.fillRect(x + 1, y + 4, 1, 4);
+  // Angular primary hull
+  ctx.fillStyle = '#220044';
+  ctx.fillRect(x + 2, y + 1, 3, 1); ctx.fillRect(x + 2, y + 10, 3, 1);
+  ctx.fillStyle = m;
+  ctx.fillRect(x + 3, y + 2, 13, 8);   // main hull
+  ctx.fillRect(x + 7, y + 1, 7, 10);   // centre ridge
+  ctx.fillRect(x + 12, y + 3, 4, 6);   // narrowing nose section
+  // Highlight stripe (geometric precision)
+  ctx.fillStyle = li;
+  ctx.fillRect(x + 7, y + 4, 5, 4);
+  // Angular seam lines
+  ctx.fillStyle = '#110033';
+  ctx.fillRect(x + 7, y + 2, 1, 8);
+  ctx.fillRect(x + 12, y + 3, 1, 6);
+  // Cockpit — narrow slit, scientific
+  ctx.fillStyle = '#110022'; ctx.fillRect(x + 14, y + 5, 3, 2);
+  ctx.fillStyle = ck;         ctx.fillRect(x + 14, y + 5, 2, 2);
+  ctx.fillStyle = '#FFFFFF';  ctx.fillRect(x + 14, y + 5, 1, 1);
+  // Precision pulse emitter (nose)
+  ctx.fillStyle = '#9955FF';
+  ctx.fillRect(x + 16, y + 5, 8, 2);
+  ctx.fillStyle = '#CCAAFF';
+  ctx.fillRect(x + 22, y + 5, 2, 1);
+}

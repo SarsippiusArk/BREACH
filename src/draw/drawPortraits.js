@@ -8,7 +8,7 @@
  */
 
 const _imgs  = {};
-const _PILOT_IDS = ['amy', 'rohan', 'akane', 'shane', 'faraday', 'liminae'];
+const _PILOT_IDS = ['amy', 'rohan', 'akane', 'shane', 'faraday', 'liminae', 'val', 'ezra'];
 
 // Begin loading all portraits immediately at module parse time.
 for (const id of _PILOT_IDS) {

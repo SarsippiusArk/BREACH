@@ -66,8 +66,33 @@ export const PILOT_DATA = {
     weaponSystem: 'axelay',
     bio: ['"Focus. Nothing else matters."', 'Four selectable weapon types.', 'SPECIAL cycles weapon slot.'],
     stats: { speed: 3, fireRate: 4, armor: 4, special: 2 },
+    locked: false,
+  },
+  val: {
+    name: 'VAL',
+    fullName: 'Valentina Cruz',
+    color: '#CC2233',
+    speed: 112,
+    fireRate: 0.12,
+    specialAmmo: 0,
+    weaponSystem: 'hellfire',
+    bio: ['"I didn\'t survive three wars for this."', 'SPECIAL cycles 4 firing modes.', 'Each mode upgrades independently.'],
+    stats: { speed: 3, fireRate: 4, armor: 4, special: 3 },
     locked: true,
-    unlockHint: 'Strike without hesitation.',
+    unlockHint: 'Fly without fear.',
+  },
+  ezra: {
+    name: 'EZRA',
+    fullName: 'Ezra Obi',
+    color: '#7733EE',
+    speed: 130,
+    fireRate: 0.11,
+    specialAmmo: 0,
+    weaponSystem: 'ikaruga',
+    bio: ['"The Rift obeys physics."', 'SPECIAL toggles RED/BLUE polarity.', 'Full gauge: SPECIAL fires Overload.'],
+    stats: { speed: 4, fireRate: 3, armor: 2, special: 5 },
+    locked: true,
+    unlockHint: 'Understand the pattern.',
   },
   faraday: {
     name: 'FARADAY',
@@ -106,7 +131,7 @@ export const JUKEBOX_TRACKS = [
   { id: 'note5', file: 'IntoTheShadow.xm',      title: 'INTO THE SHADOW',     hint: 'Defeat the Rift Sovereign' },
 ];
 
-export const STARTER_PILOTS = ['amy', 'rohan', 'akane'];
+export const STARTER_PILOTS = ['amy', 'rohan', 'akane', 'shane'];
 
 // Game physics
 export const BASE_SCROLL_SPEED = 55; // logical px/sec

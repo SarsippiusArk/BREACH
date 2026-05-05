@@ -46,9 +46,9 @@ export class InputManager {
   #prevSnap = new Set();   // Snapshot from previous frame's update()
   #curSnap  = new Set();   // Snapshot from current frame's update()
 
-  #gps         = [null, null];
-  #prevGpBtns  = [[], []];
-  #ctrlTypes   = [CTRL.KEYBOARD, CTRL.KEYBOARD];
+  #gps         = [null, null, null, null];
+  #prevGpBtns  = [[], [], [], []];
+  #ctrlTypes   = [CTRL.KEYBOARD, CTRL.KEYBOARD, CTRL.KEYBOARD, CTRL.KEYBOARD];
 
   // Keyboard bindings per player (deep-cloned so mutations don't touch DEFAULT_KB)
   #KB = structuredClone(DEFAULT_KB);
@@ -70,13 +70,14 @@ export class InputManager {
   }
 
   #onConnect(e) {
-    const slot = e.gamepad.index < 2 ? e.gamepad.index : (this.#gps[0] == null ? 0 : 1);
+    const slot = e.gamepad.index < 4 ? e.gamepad.index : (this.#gps.findIndex(g => g == null) ?? 0);
+    if (slot < 0 || slot > 3) return;
     this.#gps[slot]       = e.gamepad;
     this.#ctrlTypes[slot] = detectController(e.gamepad.id);
   }
   #onDisconnect(e) {
     const slot = e.gamepad.index;
-    if (slot < 2) { this.#gps[slot] = null; this.#ctrlTypes[slot] = CTRL.KEYBOARD; }
+    if (slot < 4) { this.#gps[slot] = null; this.#ctrlTypes[slot] = CTRL.KEYBOARD; }
   }
 
   update() {
@@ -86,7 +87,7 @@ export class InputManager {
 
     // Poll gamepads
     const gpList = navigator.getGamepads?.() ?? [];
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 4; i++) {
       const gp = gpList[i];
       if (!gp) continue;
       this.#prevGpBtns[i] = this.#gps[i]?.buttons.map(b => b.pressed) ?? [];
@@ -166,7 +167,7 @@ export class InputManager {
     for (const k of this.#curSnap) {
       if (!this.#prevSnap.has(k)) return true;
     }
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 4; i++) {
       const gp = this.#gps[i]; if (!gp) continue;
       for (let b = 0; b < gp.buttons.length; b++) {
         if (gp.buttons[b].pressed && !(this.#prevGpBtns[i]?.[b])) return true;

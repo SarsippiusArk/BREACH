@@ -15,6 +15,8 @@ import { darius   } from './darius.js';
 import { twinbee  } from './twinbee.js';
 import { sedf     } from './sedf.js';
 import { dariusTwin } from './dariustwin.js';
+import { hellfire   } from './hellfire.js';
+import { ikaruga    } from './ikaruga.js';
 
 const _fallback = new WeaponSystem();
 
@@ -27,6 +29,8 @@ const WEAPON_SYSTEMS = {
   twinbee,
   sedf,
   dariusTwin,
+  hellfire,
+  ikaruga,
 };
 
 /**

@@ -62,4 +62,12 @@ export class WeaponSystem {
 
   /** Draw ship decorations rendered AFTER the base ship sprite (orbs, overlays, etc.). */
   drawShipPost(ctx, player) {}
+
+  /**
+   * Called by GameScene collision BEFORE applying damage to the player.
+   * Return true to absorb the bullet (no damage dealt; bullet destroyed).
+   * @param {object} player
+   * @param {object} bullet  — enemy bullet entity (may have bullet.color for polarity systems)
+   */
+  onEnemyBulletContact(player, bullet) { return false; }
 }

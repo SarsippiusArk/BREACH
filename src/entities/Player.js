@@ -2,6 +2,7 @@ import { GAME_W, GAME_H, PILOT_DATA } from '../constants.js';
 import {
   drawAmyShip, drawRohanShip, drawAkaneShip,
   drawShaneShip, drawFaradayShip, drawLiminaeShip,
+  drawValShip, drawEzraShip,
   drawAmyDeathAnim, drawRohanDeathAnim, drawRohanChargeFx,
   SHIP_W, SHIP_H, ROHAN_NOSE_OX, ROHAN_NOSE_OY,
 } from '../draw/drawSprites.js';
@@ -15,6 +16,8 @@ const DRAW_FNS = {
   shane:   drawShaneShip,
   faraday: drawFaradayShip,
   liminae: drawLiminaeShip,
+  val:     drawValShip,
+  ezra:    drawEzraShip,
 };
 
 export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
@@ -22,7 +25,13 @@ export function createPlayer(pilotId, playerIdx, palette, savePref = {}) {
   const ws   = getWeaponSystem(data.weaponSystem ?? pilotId);
 
   const startX = 60;
-  const startY = playerIdx === 0 ? GAME_H * 0.5 - SHIP_H / 2 : GAME_H * 0.35 - SHIP_H / 2;
+  const Y_POS  = [
+    GAME_H * 0.50 - SHIP_H / 2,
+    GAME_H * 0.35 - SHIP_H / 2,
+    GAME_H * 0.65 - SHIP_H / 2,
+    GAME_H * 0.20 - SHIP_H / 2,
+  ];
+  const startY = Y_POS[playerIdx] ?? GAME_H * 0.5 - SHIP_H / 2;
 
   const player = {
     type: 'player', pilotId, playerIdx, alive: true, respawning: false,

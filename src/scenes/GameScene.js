@@ -34,7 +34,7 @@ export class GameScene {
     this.#audio = audio;
   }
 
-  enter({ pilot1 = 'amy', pilot2 = null, palette = {}, ngplus = false, level = 1, fromSave = false, demo = false } = {}) {
+  enter({ pilot1 = 'amy', pilot2 = null, pilot3 = null, pilot4 = null, palette = {}, ngplus = false, level = 1, fromSave = false, demo = false } = {}) {
     this.#ngplus = ngplus;
     this.#levelNum = level;
     this.#score = 0;
@@ -79,14 +79,12 @@ export class GameScene {
 
     // Create players
     this.#players = [];
-    const save = SaveManager.getSave();
-    const p1 = createPlayer(pilot1, 0, palette[pilot1], { lives: 3 });
-    this.#players.push(p1);
-    this.#entities.add(p1);
-    if (pilot2) {
-      const p2 = createPlayer(pilot2, 1, palette[pilot2], { lives: 3 });
-      this.#players.push(p2);
-      this.#entities.add(p2);
+    const _save = SaveManager.getSave();
+    for (const [idx, pilotId] of [[0,pilot1],[1,pilot2],[2,pilot3],[3,pilot4]]) {
+      if (!pilotId) continue;
+      const p = createPlayer(pilotId, idx, palette[pilotId], { lives: 3 });
+      this.#players.push(p);
+      this.#entities.add(p);
     }
 
     this.#audio.startMusic(this.#loader.music);
@@ -270,6 +268,11 @@ export class GameScene {
     // Enemy bullets → players
     checkGroups(eBullets, this.#players, (b, p) => {
       if (!p.alive) return;
+      // Polarity absorption check (Ezra's Ikaruga system)
+      if (p.ws.onEnemyBulletContact?.(p, b)) {
+        b.alive = false;  // absorbed — no damage
+        return;
+      }
       if (p.takeDamage?.(b.damage)) {
         b.alive = false;
         this.#noteStats.hitCount++;
@@ -478,15 +481,17 @@ export class GameScene {
     this.#particles.draw(ctx);
 
     // HUD
-    const p1 = this.#players[0];
-    const p2 = this.#players[1] ?? null;
+    const hudPlayers = [0,1,2,3].map(i => {
+      const p = this.#players[i];
+      if (!p) return null;
+      return { lives: p.lives, hp: p.hp, maxHp: p.maxHp, chargeLevel: p.chargeLevel,
+               specialAmmo: p.specialAmmo, maxSpecial: p.maxSpecial, shield: p.shield,
+               pilotColor: p.pilotColor };
+    });
     drawHUD(ctx, {
-      p1: p1 ? { lives: p1.lives, hp: p1.hp, maxHp: p1.maxHp, chargeLevel: p1.chargeLevel, specialAmmo: p1.specialAmmo, maxSpecial: p1.maxSpecial, shield: p1.shield, pilotColor: p1.pilotColor } : null,
-      p2: p2 ? { lives: p2.lives, hp: p2.hp, maxHp: p2.maxHp, chargeLevel: p2.chargeLevel, specialAmmo: p2.specialAmmo, maxSpecial: p2.maxSpecial, shield: p2.shield, pilotColor: p2.pilotColor } : null,
-      score: this.#score,
-      hiScore: this.#hiScore,
-      bossHp: this.#bossHp,
-      bossMaxHp: this.#bossMaxHp,
+      p1: hudPlayers[0], p2: hudPlayers[1], p3: hudPlayers[2], p4: hudPlayers[3],
+      score: this.#score, hiScore: this.#hiScore,
+      bossHp: this.#bossHp, bossMaxHp: this.#bossMaxHp,
     });
 
     // Pilot-specific HUD overlays (delegated to weapon system)
