@@ -2,6 +2,7 @@ import { GAME_W, GAME_H, SCENES, COL } from '../constants.js';
 import { px } from '../draw/drawUI.js';
 import { drawMenuStarfield } from '../draw/drawUI.js';
 import { drawPortrait } from '../draw/drawPortraits.js';
+import { drawButtonIcon } from '../draw/drawControllerIcons.js';
 
 // 7-panel cinematic sequence
 const PANELS = [
@@ -58,6 +59,7 @@ export class CinematicScene {
   #globalT = 0;
   #skipped = false;
   #ngplus = false;
+  #ctrlType = 'keyboard';
 
   constructor(gameState, audio) {
     this.#state = gameState;
@@ -75,6 +77,7 @@ export class CinematicScene {
   update(delta, input) {
     this.#t += delta;
     this.#globalT += delta;
+    this.#ctrlType = input.getControllerType(0);
 
     // Skip / advance on fire
     if (input.isPressed(0, 'fire') || input.isPressed(0, 'confirm') ||
@@ -148,9 +151,10 @@ export class CinematicScene {
 
     ctx.globalAlpha = 1;
 
-    // Skip hint
+    // Skip hint — controller-aware icon
     ctx.globalAlpha = 0.5;
-    px(ctx, 'FIRE: NEXT', GAME_W / 2, 6, COL.GRAY, 4, 'center');
+    drawButtonIcon(ctx, 'fire', this.#ctrlType, GAME_W / 2 - 18, 6, 9);
+    px(ctx, 'NEXT', GAME_W / 2 - 6, 2, COL.GRAY, 4);
     ctx.globalAlpha = 1;
   }
 }

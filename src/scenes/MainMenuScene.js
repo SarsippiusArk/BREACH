@@ -99,6 +99,7 @@ export class MainMenuScene {
   #extrasHoldTime = 0;
   #ngplusVisible = false;
   #items = ITEMS_BASE;
+  #ctrlType = 'keyboard';
 
   constructor(gameState, audio) {
     this.#state = gameState;
@@ -119,6 +120,7 @@ export class MainMenuScene {
 
   update(delta, input) {
     this.#t += delta;
+    this.#ctrlType = input.getControllerType(0);
     if (this.#inputCooldown > 0) { this.#inputCooldown -= delta; return; }
 
     // Resume AudioContext on first user interaction (browser policy requires a gesture)
@@ -220,8 +222,8 @@ export class MainMenuScene {
     // Copyright notice
     px(ctx, 'Music Composed & Copyright Elwood', GAME_W - 4, GAME_H - 5, COL.GRAY, 4, 'right');
 
-    // Controller hint
-    drawButtonIcon(ctx, 'confirm', CTRL.KEYBOARD, GAME_W / 2 - 24, GAME_H - 10, 10);
+    // Controller hint — icon adapts to connected controller
+    drawButtonIcon(ctx, 'confirm', this.#ctrlType, GAME_W / 2 - 24, GAME_H - 10, 10);
     px(ctx, 'SELECT', GAME_W / 2 - 16, GAME_H - 14, COL.GRAY, 4);
   }
 }

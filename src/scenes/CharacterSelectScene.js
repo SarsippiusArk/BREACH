@@ -2,6 +2,7 @@ import { GAME_W, GAME_H, SCENES, COL, PILOT_DATA } from '../constants.js';
 import { SaveManager } from '../engine/SaveManager.js';
 import { px, panel, drawMenuStarfield, statBar, divider } from '../draw/drawUI.js';
 import { drawPortrait } from '../draw/drawPortraits.js';
+import { drawButtonIcon } from '../draw/drawControllerIcons.js';
 const ALL_PILOTS = ['amy','rohan','akane','shane','faraday','liminae'];
 const STAT_LABELS = ['SPD','RNG','ARM','SPC'];
 const STAT_KEYS   = ['speed','fireRate','armor','special'];
@@ -13,6 +14,7 @@ export class CharacterSelectScene {
   #ready    = [false, false];
   #p2Active = false;
   #ngplus   = false;
+  #ctrlType = 'keyboard';
   #cooldown = [0, 0];
   #palette  = null;
   #unlocks  = null;
@@ -46,6 +48,7 @@ export class CharacterSelectScene {
 
   update(delta, input) {
     this.#t += delta;
+    this.#ctrlType = input.getControllerType(0);
     this.#cooldown[0] = Math.max(0, this.#cooldown[0] - delta);
     this.#cooldown[1] = Math.max(0, this.#cooldown[1] - delta);
     const pilots = this.#visiblePilots();
@@ -122,9 +125,13 @@ export class CharacterSelectScene {
       px(ctx, 'TO JOIN', GAME_W * 0.75, GAME_H / 2 + 14, COL.GRAY, 5, 'center');
     }
 
-    // Controls hint
+    // Controls hint — icon-based, adapts to connected controller
     divider(ctx, GAME_H - 18);
-    px(ctx, 'ARROWS/AD: SELECT    SPACE/ENTER: READY    ESC: BACK', GAME_W/2, GAME_H - 14, COL.GRAY, 4, 'center');
+    const hx = GAME_W / 2;
+    drawButtonIcon(ctx, 'confirm', this.#ctrlType, hx - 50, GAME_H - 10, 11);
+    px(ctx, 'READY', hx - 42, GAME_H - 14, COL.GRAY, 4);
+    drawButtonIcon(ctx, 'cancel',  this.#ctrlType, hx + 18, GAME_H - 10, 11);
+    px(ctx, 'BACK',  hx + 26, GAME_H - 14, COL.GRAY, 4);
   }
 
   #drawSection(ctx, pi, cx, pilots) {

@@ -1,12 +1,14 @@
 import { GAME_W, GAME_H, SCENES, COL } from '../constants.js';
 import { SaveManager } from '../engine/SaveManager.js';
 import { px, panel, drawMenuStarfield, divider } from '../draw/drawUI.js';
+import { drawButtonIcon } from '../draw/drawControllerIcons.js';
 
 export class GameOverScene {
   #state; #audio;
   #t = 0; #win = false; #score = 0; #level = 1;
   #hiScore = 0; #newHi = false;
   #cooldown = 0;
+  #ctrlType = 'keyboard';
 
   constructor(gameState, audio) {
     this.#state = gameState;
@@ -39,6 +41,7 @@ export class GameOverScene {
 
   update(delta, input) {
     this.#t += delta;
+    this.#ctrlType = input.getControllerType(0);
     if (this.#cooldown > 0) { this.#cooldown -= delta; return; }
     if (input.isPressed(0,'confirm') || input.isPressed(1,'confirm') ||
         input.isPressed(0,'fire') || input.isPressed(1,'fire')) {
@@ -70,7 +73,8 @@ export class GameOverScene {
 
     divider(ctx, GAME_H/2 + 42);
     if (this.#cooldown <= 0 && Math.floor(this.#t * 1.5) % 2 === 0) {
-      px(ctx, 'PRESS FIRE', GAME_W/2, GAME_H/2 + 52, COL.ACCENT, 5, 'center');
+      drawButtonIcon(ctx, 'fire', this.#ctrlType, GAME_W/2 - 34, GAME_H/2 + 52, 12);
+      px(ctx, 'CONTINUE', GAME_W/2 - 25, GAME_H/2 + 46, COL.ACCENT, 5);
     }
   }
 }
