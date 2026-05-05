@@ -12,6 +12,7 @@ import { drawBackground } from '../draw/drawBackground.js';
 import { drawHUD } from '../draw/drawHUD.js';
 import { px, panel } from '../draw/drawUI.js';
 import { PILOT_DATA } from '../constants.js';
+import { DemoInputManager } from '../engine/DemoInputManager.js';
 
 export class GameScene {
   #state; #audio;
@@ -26,13 +27,14 @@ export class GameScene {
   #noteStats = { hitCount: 0, killCount: 0, puCount: 0, notesSpawned: new Set() };
   #noteNotif  = { text: '', timer: 0 };
   #runTimer   = 0; // elapsed seconds since level start (used for hidden unlock checks)
+  #isDemo = false; #demoInput = null; #demoTimer = 0;
 
   constructor(gameState, audio) {
     this.#state = gameState;
     this.#audio = audio;
   }
 
-  enter({ pilot1 = 'amy', pilot2 = null, palette = {}, ngplus = false, level = 1, fromSave = false } = {}) {
+  enter({ pilot1 = 'amy', pilot2 = null, palette = {}, ngplus = false, level = 1, fromSave = false, demo = false } = {}) {
     this.#ngplus = ngplus;
     this.#levelNum = level;
     this.#score = 0;
@@ -45,6 +47,9 @@ export class GameScene {
     this.#noteStats = { hitCount: 0, killCount: 0, puCount: 0, notesSpawned: new Set() };
     this.#noteNotif  = { text: '', timer: 0 };
     this.#runTimer   = 0;
+    this.#isDemo  = demo;
+    this.#demoTimer = 0;
+    this.#demoInput = demo ? new DemoInputManager() : null;
 
     this.#camera = new Camera();
     this.#entities = new EntityManager();
@@ -91,26 +96,44 @@ export class GameScene {
   exit() { this.#audio.stopMusic(); }
 
   update(delta, input) {
-    if (this.#paused) { this.#updatePause(input); return; }
+    // ── Demo / attract mode ──────────────────────────────────────────────────
+    if (this.#isDemo) {
+      this.#demoTimer += delta;
+      this.#demoInput.update(delta);
+      // Real player pressed anything → bail back to menu
+      if (input.anyPressed() || this.#demoTimer >= 30) {
+        this.#state.go(SCENES.MENU);
+        return;
+      }
+    }
+
+    if (this.#paused && !this.#isDemo) { this.#updatePause(input); return; }
     if (this.#gameOver) {
       this.#gameOverTimer -= delta;
       if (this.#gameOverTimer <= 0 || input.isPressed(0,'fire') || input.isPressed(1,'fire')) {
-        this.#goGameOver();
+        if (this.#isDemo) this.#state.go(SCENES.MENU);
+        else this.#goGameOver();
       }
       return;
     }
     if (this.#levelComplete) {
       this.#completeTimer -= delta;
-      if (this.#completeTimer <= 0) this.#finishLevel();
+      if (this.#completeTimer <= 0) {
+        if (this.#isDemo) this.#state.go(SCENES.MENU);
+        else this.#finishLevel();
+      }
       return;
     }
     if (this.#titleTimer > 0) this.#titleTimer -= delta;
     this.#runTimer += delta;
 
-    // Pause check
-    if (input.isPressed(0,'pause') || input.isPressed(1,'pause')) {
+    // Pause check (disabled in demo)
+    if (!this.#isDemo && (input.isPressed(0,'pause') || input.isPressed(1,'pause'))) {
       this.#paused = true; this.#pauseSel = 0; return;
     }
+
+    // Active input: real controller or AI
+    const ai = this.#isDemo ? this.#demoInput : input;
 
     // Update camera
     if (!this.#loader.bossActive) this.#camera.update(delta);
@@ -118,7 +141,7 @@ export class GameScene {
     // Update players
     for (const p of this.#players) {
       if (!p.alive) continue;
-      p.update(delta, input, this.#camera, this.#entities);
+      p.update(delta, ai, this.#camera, this.#entities);
       // Spawn bullets
       if (p.bulletsToSpawn?.length) {
         p.bulletsToSpawn.forEach(b => this.#entities.add(b));
@@ -492,6 +515,9 @@ export class GameScene {
     // Pause overlay
     if (this.#paused) this.#drawPause(ctx);
 
+    // Demo / attract overlay
+    if (this.#isDemo) this.#drawDemoOverlay(ctx);
+
     // Game over overlay
     if (this.#gameOver) {
       ctx.fillStyle = `rgba(0,0,0,${Math.min(0.7, (3 - this.#gameOverTimer) * 0.25)})`;
@@ -506,6 +532,21 @@ export class GameScene {
       px(ctx, 'LEVEL CLEAR!', GAME_W/2, GAME_H/2 - 20, COL.GREEN, 10, 'center');
       px(ctx, `SCORE: ${this.#score}`, GAME_W/2, GAME_H/2 + 10, COL.YELLOW, 6, 'center');
     }
+  }
+
+  #drawDemoOverlay(ctx) {
+    ctx.save();
+    // Semi-transparent "DEMO" badge — top centre
+    ctx.fillStyle = 'rgba(0,0,20,0.65)';
+    ctx.fillRect(GAME_W / 2 - 32, 3, 64, 17);
+    ctx.globalAlpha = 0.95;
+    px(ctx, 'DEMO', GAME_W / 2, 5, COL.YELLOW, 7, 'center');
+    ctx.globalAlpha = 1;
+    // Blinking prompt — bottom centre
+    if (Math.sin(this.#demoTimer * 5) > 0) {
+      px(ctx, 'PRESS ANY BUTTON TO CONTINUE', GAME_W / 2, GAME_H - 9, COL.WHITE, 4, 'center');
+    }
+    ctx.restore();
   }
 
   #drawPause(ctx) {

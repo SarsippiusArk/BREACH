@@ -96,6 +96,7 @@ export class MainMenuScene {
   #sel = 0;
   #t = 0;
   #inputCooldown = 0;
+  #idleTimer = 0;
   #extrasHoldTime = 0;
   #ngplusVisible = false;
   #items = ITEMS_BASE;
@@ -110,6 +111,7 @@ export class MainMenuScene {
     this.#sel = 0;
     this.#t   = 0;
     this.#inputCooldown = 0.4;
+    this.#idleTimer = 0;
     const unlocks = SaveManager.getUnlocks();
     this.#ngplusVisible = unlocks.ngplus;
     this.#items = this.#ngplusVisible ? ITEMS_UNLOCK : ITEMS_BASE;
@@ -118,9 +120,23 @@ export class MainMenuScene {
 
   exit() { this.#audio.stopMusic(); }
 
+  #launchDemo() {
+    this.#idleTimer = 0;
+    const ALL = ['amy','rohan','akane','shane','faraday','liminae'];
+    const pilot1 = ALL[Math.floor(Math.random() * ALL.length)];
+    const pilot2 = Math.random() > 0.5
+      ? ALL[Math.floor(Math.random() * ALL.length)] : null;
+    this.#state.go(SCENES.GAME, { demo: true, pilot1, pilot2, level: 1 });
+  }
+
   update(delta, input) {
     this.#t += delta;
     this.#ctrlType = input.getControllerType(0);
+
+    // Idle / attract mode — reset on any input, fire demo after 60 s
+    if (input.anyPressed()) { this.#idleTimer = 0; } else { this.#idleTimer += delta; }
+    if (this.#idleTimer >= 60) { this.#launchDemo(); return; }
+
     if (this.#inputCooldown > 0) { this.#inputCooldown -= delta; return; }
 
     // Resume AudioContext on first user interaction (browser policy requires a gesture)
